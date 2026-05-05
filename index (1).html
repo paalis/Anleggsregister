@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petors AS — Utstyrsregister</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14; --surface: #141720; --surface2: #1c2030; --border: #252b3d;
+    --accent: #e8ff47; --accent2: #47b8ff; --text: #e8eaf0; --muted: #6b7290;
+    --danger: #ff5c5c; --ok: #4dff9e; --service: #ffb347; --utgatt: #ff5c5c; --utlaan: #c084fc;
+    --cat-sub: #a78bfa; --cat-topper: #60a5fa; --cat-monitor: #34d399;
+    --cat-lydmixer: #f472b6; --cat-lysmixer: #fbbf24; --cat-stagerack: #fb923c;
+    --cat-mikrofon: #38bdf8; --cat-di: #a3e635; --cat-stativ: #e879f9; --cat-default: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; }
+
+  header { border-bottom: 1px solid var(--border); padding: 28px 40px 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+  .logo-block svg.site-logo { height: 50px; width: auto; display: block; }
+  .logo-block p { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 6px; }
+  .header-stats { display: flex; gap: 32px; }
+  .stat { text-align: right; }
+  .stat-num { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.6rem; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+
+  .nav-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 40px; }
+  .nav-tab { font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 14px 20px; cursor: pointer; border: none; background: none; color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.15s; margin-bottom: -1px; }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .toolbar { padding: 20px 40px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; }
+  .search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: 0.4; }
+  input[type="text"], input[type="number"], input[type="date"] { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.85rem; padding: 10px 12px; border-radius: 6px; outline: none; transition: border-color 0.15s; }
+  input[type="text"] { width: 100%; padding: 10px 14px 10px 40px; }
+  input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus { border-color: var(--accent); }
+  select { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.82rem; padding: 10px 14px; border-radius: 6px; outline: none; cursor: pointer; transition: border-color 0.15s; }
+  select:focus { border-color: var(--accent); }
+  textarea { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.85rem; padding: 10px 12px; border-radius: 6px; outline: none; transition: border-color 0.15s; resize: vertical; width: 100%; }
+  textarea:focus { border-color: var(--accent); }
+
+  .btn { font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 18px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.15s; }
+  .btn-accent { background: var(--accent); color: #0d0f14; }
+  .btn-accent:hover { background: #d4eb2c; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-purple { background: transparent; border: 1px solid var(--utlaan); color: var(--utlaan); }
+  .btn-purple:hover { background: var(--utlaan); color: #0d0f14; }
+  .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); margin-right: auto; }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .table-wrap { padding: 28px 40px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  thead th { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+  thead th:hover { color: var(--accent); }
+  thead th.sort-asc::after { content: ' ↑'; color: var(--accent); }
+  thead th.sort-desc::after { content: ' ↓'; color: var(--accent); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; cursor: pointer; }
+  tbody tr:hover { background: var(--surface); }
+  td { padding: 12px 14px; vertical-align: middle; }
+  .cat-badge { display: inline-block; padding: 2px 9px; border-radius: 100px; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.05em; border: 1px solid; }
+  .status-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-ok { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  .dot-service { background: var(--service); box-shadow: 0 0 6px var(--service); }
+  .dot-utgatt { background: var(--utgatt); box-shadow: 0 0 6px var(--utgatt); }
+  .dot-utlaan { background: var(--utlaan); box-shadow: 0 0 6px var(--utlaan); }
+  .qty-badge { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--accent2); }
+  .no-results { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 0.85rem; }
+
+  .utlaan-grid { padding: 28px 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .utlaan-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; transition: border-color 0.15s; }
+  .utlaan-card:hover { border-color: var(--utlaan); }
+  .utlaan-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .utlaan-card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; }
+  .utlaan-badge { font-size: 0.68rem; padding: 3px 8px; border-radius: 100px; background: var(--utlaan)22; color: var(--utlaan); border: 1px solid var(--utlaan)44; }
+  .utlaan-badge.overdue { background: var(--danger)22; color: var(--danger); border-color: var(--danger)44; }
+  .utlaan-meta { font-size: 0.75rem; color: var(--muted); line-height: 1.8; }
+  .utlaan-meta strong { color: var(--text); }
+  .utlaan-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+  .logg-wrap { padding: 28px 40px; }
+  .logg-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; display: flex; gap: 16px; align-items: flex-start; }
+  .logg-date { font-size: 0.72rem; color: var(--muted); white-space: nowrap; padding-top: 2px; min-width: 90px; }
+  .logg-body { flex: 1; }
+  .logg-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
+  .logg-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+  .logg-tag { display: inline-block; font-size: 0.65rem; padding: 2px 7px; border-radius: 100px; margin-right: 6px; border: 1px solid; }
+  .logg-tag-service { color: var(--service); border-color: var(--service)44; background: var(--service)11; }
+  .logg-tag-rep { color: var(--accent2); border-color: var(--accent2)44; background: var(--accent2)11; }
+  .logg-tag-notat { color: var(--muted); border-color: var(--border); }
+  .logg-del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px; }
+  .logg-del-btn:hover { color: var(--danger); background: var(--danger)11; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 580px; max-width: 95vw; max-height: 90vh; overflow-y: auto; transform: translateY(16px); transition: transform 0.2s; }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header { padding: 24px 28px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .modal-header h2 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; line-height: 1; transition: color 0.15s; }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 24px 28px; }
+  .modal-footer { padding: 16px 28px 24px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-full { grid-column: 1 / -1; }
+  .form-group label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; }
+
+  .modal-tabs { display: flex; border-bottom: 1px solid var(--border); margin: 0 -28px; padding: 0 28px; }
+  .modal-tab { font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 12px 16px; cursor: pointer; border: none; background: none; color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.15s; margin-bottom: -1px; }
+  .modal-tab:hover { color: var(--text); }
+  .modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .modal-tab-content { display: none; padding-top: 20px; }
+  .modal-tab-content.active { display: block; }
+
+  .qr-wrap { text-align: center; padding: 20px 0; }
+  .qr-wrap #qr-canvas { display: inline-block; padding: 16px; background: #fff; border-radius: 8px; }
+  .qr-vare { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+  .qr-meta { font-size: 0.75rem; color: var(--muted); margin-bottom: 20px; }
+
+  .inline-logg { max-height: 200px; overflow-y: auto; margin-bottom: 16px; }
+  .inline-logg-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.78rem; align-items: flex-start; }
+  .inline-logg-item:last-child { border-bottom: none; }
+  .inline-logg-date { color: var(--muted); white-space: nowrap; min-width: 82px; }
+  .inline-logg-text { flex: 1; }
+
+  .section-header { padding: 20px 40px 0; display: flex; justify-content: space-between; align-items: center; }
+  .section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
+
+  @media (max-width: 700px) {
+    header { flex-direction: column; align-items: flex-start; padding: 20px; }
+    .header-stats { gap: 20px; }
+    .toolbar, .nav-tabs { padding: 16px 20px; }
+    .table-wrap, .logg-wrap, .utlaan-grid, .section-header { padding: 16px 20px; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <svg class="site-logo" viewBox="0 0 390 66" xmlns="http://www.w3.org/2000/svg">
+      <style>.lt{font-family:'Trebuchet MS',Arial,sans-serif;font-size:58px;font-weight:300;fill:#b8bcc8}</style>
+      <text class="lt" x="0" y="54">Pet</text>
+      <circle cx="107" cy="38" r="18" fill="none" stroke="#b8bcc8" stroke-width="2.8"/>
+      <circle cx="107" cy="38" r="6" fill="#9aa0b8"/>
+      <text class="lt" x="128" y="54">rs as</text>
+    </svg>
+    <p>Utstyrsregister — Lydanlegg</p>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Enheter totalt</div></div>
+    <div class="stat"><div class="stat-num" id="stat-items">0</div><div class="stat-label">Produktlinjer</div></div>
+    <div class="stat"><div class="stat-num" id="stat-utlaan" style="color:var(--utlaan)">0</div><div class="stat-label">Utlånt</div></div>
+    <div class="stat"><div class="stat-num" id="stat-service" style="color:var(--service)">0</div><div class="stat-label">Til service</div></div>
+  </div>
+</header>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="switchView('register', this)">Utstyr</button>
+  <button class="nav-tab" onclick="switchView('utlaan', this)">Utlån</button>
+  <button class="nav-tab" onclick="switchView('logg', this)">Servicelogg</button>
+</div>
+
+<!-- REGISTER -->
+<div class="view active" id="view-register">
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" color="#fff"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search" placeholder="Søk etter vare, kategori, lokasjon...">
+    </div>
+    <select id="filter-kat"><option value="">Alle kategorier</option></select>
+    <select id="filter-lok"><option value="">Alle lokasjoner</option></select>
+    <select id="filter-status">
+      <option value="">Alle statuser</option>
+      <option value="OK">OK</option>
+      <option value="Utlånt">Utlånt</option>
+      <option value="Service">Service</option>
+      <option value="Utgått">Utgått</option>
+    </select>
+    <button class="btn btn-accent" onclick="openItemModal(null)">+ Legg til</button>
+    <button class="btn btn-ghost" onclick="exportCSV()">Eksport CSV</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th onclick="sortBy('kategori')">Kategori</th>
+        <th onclick="sortBy('vare')">Vare / Modell</th>
+        <th onclick="sortBy('kvantitet')">Ant.</th>
+        <th onclick="sortBy('lokasjon')">Lokasjon</th>
+        <th onclick="sortBy('status')">Status</th>
+        <th onclick="sortBy('serienummer')">Serienr.</th>
+        <th onclick="sortBy('innkjopspris')">Pris (NOK)</th>
+        <th onclick="sortBy('innkjopsdato')">Dato</th>
+        <th>Kommentar</th>
+      </tr></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+    <div id="no-results" class="no-results" style="display:none">Ingen resultater matcher filteret.</div>
+  </div>
+</div>
+
+<!-- UTLÅN -->
+<div class="view" id="view-utlaan">
+  <div class="section-header">
+    <span class="section-title">Aktive utlån</span>
+    <button class="btn btn-purple" onclick="openUtlaanModal(null)">+ Registrer utlån</button>
+  </div>
+  <div class="utlaan-grid" id="utlaan-grid"></div>
+</div>
+
+<!-- SERVICELOGG -->
+<div class="view" id="view-logg">
+  <div class="section-header">
+    <span class="section-title">Servicelogg</span>
+    <button class="btn btn-ghost" onclick="openLoggModal(null)">+ Ny loggføring</button>
+  </div>
+  <div class="logg-wrap" id="logg-list"></div>
+</div>
+
+<!-- MODAL: UTSTYR -->
+<div class="modal-overlay" id="item-modal-overlay" onclick="closeModalIfBg(event,'item-modal-overlay')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="item-modal-title">Legg til utstyr</h2>
+      <button class="modal-close" onclick="closeModal('item-modal-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchModalTab('tab-info',this)">Info</button>
+        <button class="modal-tab" onclick="switchModalTab('tab-logg',this)">Logg</button>
+        <button class="modal-tab" onclick="switchModalTab('tab-qr',this)">QR-kode</button>
+      </div>
+      <div class="modal-tab-content active" id="tab-info">
+        <div class="form-grid">
+          <div class="form-group"><label>Kategori *</label>
+            <select id="f-kategori"><option>Sub</option><option>Topper</option><option>Monitor</option><option>Lydmixer</option><option>Lysmixer</option><option>Stagerack</option><option>Mikrofon</option><option>DI</option><option>Stativ - gitar</option><option>Annet</option></select></div>
+          <div class="form-group"><label>Status *</label>
+            <select id="f-status"><option>OK</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
+          <div class="form-group form-full"><label>Vare / Modell *</label><input type="text" id="f-vare" placeholder="f.eks. Shure SM58"></div>
+          <div class="form-group"><label>Kvantitet *</label><input type="number" id="f-kvantitet" min="1" value="1"></div>
+          <div class="form-group"><label>Lokasjon</label><input type="text" id="f-lokasjon" placeholder="f.eks. Selbu"></div>
+          <div class="form-group"><label>Serienummer / Asset-ID</label><input type="text" id="f-serienummer" placeholder="SN-2024-001"></div>
+          <div class="form-group"><label>Innkjøpspris (NOK)</label><input type="number" id="f-pris" min="0" placeholder="0"></div>
+          <div class="form-group"><label>Innkjøpsdato</label><input type="date" id="f-dato"></div>
+          <div class="form-group form-full"><label>Kommentar</label><textarea id="f-kommentar" rows="2" placeholder="Ekstra informasjon..."></textarea></div>
+        </div>
+      </div>
+      <div class="modal-tab-content" id="tab-logg">
+        <div class="inline-logg" id="item-logg-list"></div>
+        <div class="form-grid">
+          <div class="form-group"><label>Type</label>
+            <select id="nl-type"><option value="service">Service</option><option value="rep">Reparasjon</option><option value="notat">Notat</option></select></div>
+          <div class="form-group"><label>Dato</label><input type="date" id="nl-dato"></div>
+          <div class="form-group form-full"><label>Beskrivelse</label><textarea id="nl-desc" rows="2" placeholder="Hva ble gjort?"></textarea></div>
+        </div>
+        <button class="btn btn-ghost" style="margin-top:4px" onclick="addLoggEntry()">+ Legg til loggføring</button>
+      </div>
+      <div class="modal-tab-content" id="tab-qr">
+        <div class="qr-wrap">
+          <div class="qr-vare" id="qr-vare-name"></div>
+          <div class="qr-meta" id="qr-vare-meta"></div>
+          <div id="qr-canvas"></div>
+          <div style="margin-top:16px"><button class="btn btn-ghost" onclick="downloadQR()">Last ned QR</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="btn-item-delete" onclick="deleteItem()" style="display:none">Slett</button>
+      <button class="btn btn-ghost" onclick="closeModal('item-modal-overlay')">Avbryt</button>
+      <button class="btn btn-accent" onclick="saveItem()">Lagre</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: UTLÅN -->
+<div class="modal-overlay" id="utlaan-modal-overlay" onclick="closeModalIfBg(event,'utlaan-modal-overlay')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="utlaan-modal-title">Registrer utlån</h2>
+      <button class="modal-close" onclick="closeModal('utlaan-modal-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group form-full"><label>Utstyr *</label><select id="ul-utstyr"></select></div>
+        <div class="form-group form-full"><label>Låntaker *</label><input type="text" id="ul-laantaker" placeholder="Navn / organisasjon"></div>
+        <div class="form-group"><label>Utlånsdato *</label><input type="date" id="ul-fra"></div>
+        <div class="form-group"><label>Forventet retur</label><input type="date" id="ul-til"></div>
+        <div class="form-group form-full"><label>Notat</label><textarea id="ul-notat" rows="2" placeholder="Arrangement, kontakt, etc."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="btn-utlaan-delete" onclick="deleteUtlaan()" style="display:none">Slett</button>
+      <button class="btn btn-ghost" onclick="closeModal('utlaan-modal-overlay')">Avbryt</button>
+      <button class="btn btn-accent" onclick="saveUtlaan()">Lagre</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: LOGG -->
+<div class="modal-overlay" id="logg-modal-overlay" onclick="closeModalIfBg(event,'logg-modal-overlay')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Ny loggføring</h2>
+      <button class="modal-close" onclick="closeModal('logg-modal-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group form-full"><label>Utstyr *</label><select id="lg-utstyr"></select></div>
+        <div class="form-group"><label>Type</label>
+          <select id="lg-type"><option value="service">Service</option><option value="rep">Reparasjon</option><option value="notat">Notat</option></select></div>
+        <div class="form-group"><label>Dato *</label><input type="date" id="lg-dato"></div>
+        <div class="form-group form-full"><label>Beskrivelse *</label><textarea id="lg-desc" rows="3" placeholder="Hva ble gjort / observert?"></textarea></div>
+        <div class="form-group form-full"><label>Utført av</label><input type="text" id="lg-av" placeholder="Navn / firma"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('logg-modal-overlay')">Avbryt</button>
+      <button class="btn btn-accent" onclick="saveLogg()">Lagre</button>
+    </div>
+  </div>
+</div>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Miljøvariabler injisert av Vercel (se vercel.json) -->
+<script>
+  window.ENV = {
+    SUPABASE_URL: '%%SUPABASE_URL%%',
+    SUPABASE_KEY: '%%SUPABASE_KEY%%',
+  };
+</script>
+
+<!-- Scripts: api.js først, så app.js -->
+<script src="api.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
