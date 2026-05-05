@@ -6,7 +6,7 @@
  */
 
 const SUPABASE_URL = 'https://wocbanyacwklsgemjcnx.supabase.co'; // <- din URL
-const SUPABASE_KEY = 'DIN_PUBLISHABLE_KEY_HER';                  // <- din publishable key
+const SUPABASE_KEY = 'sb_publishable_cI4_LoUOOQG8B36Z98Y2TQ_y3INe4Hr';                  // <- din publishable key
 
 const API = (() => {
 
