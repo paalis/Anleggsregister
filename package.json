@@ -1,0 +1,11 @@
+{
+  "name": "petors-anlegg",
+  "version": "1.0.0",
+  "description": "Petors AS — Utstyrsregister",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
