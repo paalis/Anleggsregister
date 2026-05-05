@@ -1,7 +1,0 @@
-{
-  "outputDirectory": "public",
-  "buildCommand": "node build.js",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
