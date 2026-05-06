@@ -241,7 +241,7 @@ async function renderItemEnheter() {
   } else {
     el.innerHTML = enheter.map(e => `
       <div class="inline-logg-item">
-        <span class="inline-logg-date" style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2)">#${e.enhet_nr}</span>
+        <span class="inline-logg-date" style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2)">${e.asset_id || '#' + e.enhet_nr}</span>
         <span class="inline-logg-text">
           ${statusDot(e.status)}
           ${e.serienummer ? `<span style="color:var(--muted);margin-left:10px">SN: ${e.serienummer}</span>` : ''}
@@ -290,7 +290,7 @@ async function renderItemLogg() {
 
   el.innerHTML = entries.map(e => {
     const enhet = e.enhetId ? enhetMap[e.enhetId] : null;
-    const enhetLabel = enhet ? `<span class="enhet-badge">#${enhet.enhet_nr}${enhet.serienummer ? ' · ' + enhet.serienummer : ''}</span> ` : '';
+    const enhetLabel = enhet ? `<span class="enhet-badge">${enhet.asset_id || '#' + enhet.enhet_nr}${enhet.serienummer ? ' · ' + enhet.serienummer : ''}</span> ` : '';
     return `<div class="inline-logg-item">
       <span class="inline-logg-date">${e.dato}</span>
       <span class="inline-logg-text">
@@ -303,7 +303,7 @@ async function renderItemLogg() {
   // Fyll enhet-dropdown i logg-skjema
   const sel = $('nl-enhet');
   sel.innerHTML = '<option value="">— hele modellen —</option>'
-    + enheter.map(e => `<option value="${e.id}">#${e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''}</option>`).join('');
+    + enheter.map(e => `<option value="${e.id}">${e.asset_id || '#' + e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''}</option>`).join('');
 }
 
 async function addLoggEntry() {
@@ -363,7 +363,7 @@ async function oppdaterLoggEnhetSelect(utstyrId) {
   if (!utstyrId) { sel.innerHTML = '<option value="">— hele modellen —</option>'; return; }
   const enheter = await API.getEnheter(parseInt(utstyrId));
   sel.innerHTML = '<option value="">— hele modellen —</option>'
-    + enheter.map(e => `<option value="${e.id}">#${e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''}</option>`).join('');
+    + enheter.map(e => `<option value="${e.id}">${e.asset_id || '#' + e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''}</option>`).join('');
 }
 
 async function openLoggModal(utstyrId = null) {
@@ -425,7 +425,7 @@ async function renderUtlaan() {
     const enhet = u.enhetId ? enhetMap[u.enhetId] : null;
     const over  = isOverdue(u.til);
     const enhetBadge = enhet
-      ? `<span class="enhet-badge">Enhet #${enhet.enhet_nr}${enhet.serienummer ? ' · ' + enhet.serienummer : ''}</span>`
+      ? `<span class="enhet-badge">${enhet.asset_id || '#' + enhet.enhet_nr}${enhet.serienummer ? ' · ' + enhet.serienummer : ''}</span>`
       : (u.antall > 1 ? `<span class="enhet-badge">×${u.antall}</span>` : '');
     return `<div class="utlaan-card">
       <div class="utlaan-card-header">
@@ -481,7 +481,7 @@ async function oppdaterEnhetSelect(utstyrId, valgtEnhetId = null) {
   if (!utstyrId) { sel.innerHTML = '<option value="">— ingen enheter —</option>'; return; }
   const enheter = await API.getEnheter(utstyrId);
   sel.innerHTML = '<option value="">— velg enhet (valgfritt) —</option>'
-    + enheter.map(e => `<option value="${e.id}">#${e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''} [${e.status}]</option>`).join('');
+    + enheter.map(e => `<option value="${e.id}">${e.asset_id || '#' + e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''} [${e.status}]</option>`).join('');
   if (valgtEnhetId) sel.value = valgtEnhetId;
   oppdaterAntallFelt();
 }

@@ -78,6 +78,11 @@ const API = (() => {
     return data && data.length > 0 ? data[0].enhet_nr + 1 : 1;
   }
 
+  function lagAssetId(kategori, enhetId) {
+    const prefix = kategori.replace(/[^a-zA-ZæøåÆØÅ]/g, '').substring(0, 2).toUpperCase();
+    return `${prefix}-${String(enhetId).padStart(3, '0')}`;
+  }
+
   async function saveEnhet(entry) {
     const row = {
       utstyr_id:   entry.utstyrId,
@@ -91,7 +96,11 @@ const API = (() => {
       check(error, 'saveEnhet (update)'); return data;
     } else {
       const { data, error } = await sb.from('enheter').insert(row).select().single();
-      check(error, 'saveEnhet (insert)'); return data;
+      check(error, 'saveEnhet (insert)');
+      const utstyr   = await getUtstyrById(entry.utstyrId);
+      const asset_id = lagAssetId(utstyr.kategori, data.id);
+      await sb.from('enheter').update({ asset_id }).eq('id', data.id);
+      return { ...data, asset_id };
     }
   }
 
