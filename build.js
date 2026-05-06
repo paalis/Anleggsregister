@@ -13,7 +13,7 @@ if (!url || !key) {
   process.exit(1);
 }
 
-const filePath = path.join(__dirname, 'public', 'index.html');
+const filePath = path.join(__dirname, 'index.html');
 let html = fs.readFileSync(filePath, 'utf8');
 
 html = html.replace('%%SUPABASE_URL%%', url);
