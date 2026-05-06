@@ -202,12 +202,14 @@ async function renderQR() {
   const r       = await API.getUtstyrById(editId);
   const enheter = await API.getEnheter(editId);
 
-  // Bygg enhet-dropdown
+  // Bygg enhet-dropdown (bevar valgt verdi hvis dropdown allerede er populert)
   const sel = $('qr-enhet-select');
+  const forrigeValg = sel.value;
   sel.innerHTML = enheter.length
     ? enheter.map(e => `<option value="${e.id}" data-asset="${e.asset_id || ''}">${e.asset_id || '#' + e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''}</option>`).join('')
     : '<option value="">Ingen enheter registrert</option>';
 
+  if (forrigeValg) sel.value = forrigeValg;
   const enhet = enheter.find(e => e.id === parseInt(sel.value)) || enheter[0] || null;
 
   const assetId   = enhet?.asset_id || null;
