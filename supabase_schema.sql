@@ -18,13 +18,26 @@ create table utstyr (
   opprettet     timestamptz default now()
 );
 
+-- ENHETER (individuelle fysiske enheter av et utstyr)
+create table enheter (
+  id          bigint primary key generated always as identity,
+  utstyr_id   bigint references utstyr(id) on delete cascade,
+  enhet_nr    integer not null,
+  serienummer text,
+  status      text not null default 'OK',
+  kommentar   text,
+  opprettet   timestamptz default now()
+);
+
 -- UTLÅN
 create table utlaan (
   id            bigint primary key generated always as identity,
   utstyr_id     bigint references utstyr(id) on delete cascade,
+  enhet_id      bigint references enheter(id) on delete set null,
   laantaker     text not null,
   fra           date not null,
   til           date,
+  antall        integer not null default 1,
   notat         text,
   opprettet     timestamptz default now()
 );
@@ -87,10 +100,18 @@ insert into utstyr (kategori, vare, kvantitet, lokasjon, kommentar, status) valu
 -- Lar alle lese og skrive uten innlogging (intern app).
 -- Bytt til autentisert tilgang senere ved behov.
 -- ============================================================
-alter table utstyr enable row level security;
-alter table utlaan enable row level security;
-alter table logg   enable row level security;
+alter table utstyr   enable row level security;
+alter table enheter  enable row level security;
+alter table utlaan   enable row level security;
+alter table logg     enable row level security;
 
-create policy "Alle kan lese og skrive utstyr" on utstyr for all using (true) with check (true);
-create policy "Alle kan lese og skrive utlaan" on utlaan for all using (true) with check (true);
-create policy "Alle kan lese og skrive logg"   on logg   for all using (true) with check (true);
+create policy "Alle kan lese og skrive utstyr"  on utstyr  for all using (true) with check (true);
+create policy "Alle kan lese og skrive enheter" on enheter for all using (true) with check (true);
+create policy "Alle kan lese og skrive utlaan"  on utlaan  for all using (true) with check (true);
+create policy "Alle kan lese og skrive logg"    on logg    for all using (true) with check (true);
+
+-- ============================================================
+-- Migrering (kjør dette hvis du allerede har data i databasen):
+-- alter table utlaan add column if not exists antall   integer not null default 1;
+-- alter table utlaan add column if not exists enhet_id bigint references enheter(id) on delete set null;
+-- ============================================================

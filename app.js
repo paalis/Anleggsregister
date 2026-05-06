@@ -31,7 +31,7 @@ function catColor(cat) { return CAT_COLORS[cat] || CAT_COLORS['Annet']; }
 function isOverdue(til) { return til && til < today(); }
 
 function statusDot(s) {
-  const cls = s === 'OK'     ? 'dot-ok'
+  const cls = s === 'OK'      ? 'dot-ok'
             : s === 'Service' ? 'dot-service'
             : s === 'Utlånt'  ? 'dot-utlaan'
             : 'dot-utgatt';
@@ -53,8 +53,9 @@ function switchModalTab(tabId, btn) {
   document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
   $(tabId).classList.add('active');
   btn.classList.add('active');
-  if (tabId === 'tab-qr')   renderQR();
-  if (tabId === 'tab-logg') renderItemLogg();
+  if (tabId === 'tab-qr')      renderQR();
+  if (tabId === 'tab-logg')    renderItemLogg();
+  if (tabId === 'tab-enheter') renderItemEnheter();
 }
 
 // ── Modal helpers ─────────────────────────────────────────────
@@ -65,13 +66,14 @@ function closeModalIfBg(e, id) { if (e.target.id === id) closeModal(id); }
 // REGISTER
 // ════════════════════════════════════════════════════════════
 
-function getFiltered() {
+async function getFiltered() {
   const q   = $('search').value.toLowerCase();
   const kat = $('filter-kat').value;
   const lok = $('filter-lok').value;
   const st  = $('filter-status').value;
 
-  return API.getUtstyr()
+  const all = await API.getUtstyr();
+  return all
     .filter(r => {
       const match = !q || [r.vare, r.kategori, r.lokasjon, r.kommentar, r.serienummer]
         .some(v => (v || '').toLowerCase().includes(q));
@@ -86,8 +88,8 @@ function getFiltered() {
     });
 }
 
-function render() {
-  const rows = getFiltered();
+async function render() {
+  const rows  = await getFiltered();
   const tbody = $('table-body');
   const noR   = $('no-results');
 
@@ -111,17 +113,18 @@ function render() {
   }
 
   // Stats
-  const all = API.getUtstyr();
+  const all    = await API.getUtstyr();
+  const utlaan = await API.getUtlaan();
   $('stat-total').textContent   = all.reduce((s, r) => s + (parseInt(r.kvantitet) || 0), 0);
   $('stat-items').textContent   = all.length;
-  $('stat-utlaan').textContent  = API.getUtlaan().length;
+  $('stat-utlaan').textContent  = utlaan.length;
   $('stat-service').textContent = all.filter(r => r.status === 'Service').length;
 
-  populateFilters();
+  populateFilters(all);
 }
 
-function populateFilters() {
-  const all  = API.getUtstyr();
+async function populateFilters(all) {
+  if (!all) all = await API.getUtstyr();
   const kats = [...new Set(all.map(r => r.kategori).filter(Boolean))].sort();
   const loks = [...new Set(all.map(r => r.lokasjon).filter(Boolean))].sort();
   const fk = $('filter-kat'), fl = $('filter-lok');
@@ -140,7 +143,7 @@ function sortBy(col) {
 }
 
 // ── Item modal ────────────────────────────────────────────────
-function openItemModal(id) {
+async function openItemModal(id) {
   editId = id;
 
   // Reset til info-tab
@@ -152,25 +155,25 @@ function openItemModal(id) {
   $('item-modal-title').textContent = id === null ? 'Legg til utstyr' : 'Rediger utstyr';
   $('btn-item-delete').style.display = id === null ? 'none' : 'inline-block';
 
-  const r = id !== null ? API.getUtstyrById(id) : null;
-  $('f-kategori').value   = r?.kategori    ?? 'Sub';
-  $('f-vare').value       = r?.vare        ?? '';
-  $('f-kvantitet').value  = r?.kvantitet   ?? 1;
-  $('f-lokasjon').value   = r?.lokasjon    ?? '';
-  $('f-kommentar').value  = r?.kommentar   ?? '';
-  $('f-status').value     = r?.status      ?? 'OK';
-  $('f-serienummer').value= r?.serienummer ?? '';
-  $('f-pris').value       = r?.innkjopspris ?? '';
-  $('f-dato').value       = r?.innkjopsdato ?? '';
+  const r = id !== null ? await API.getUtstyrById(id) : null;
+  $('f-kategori').value    = r?.kategori     ?? 'Sub';
+  $('f-vare').value        = r?.vare         ?? '';
+  $('f-kvantitet').value   = r?.kvantitet    ?? 1;
+  $('f-lokasjon').value    = r?.lokasjon     ?? '';
+  $('f-kommentar').value   = r?.kommentar    ?? '';
+  $('f-status').value      = r?.status       ?? 'OK';
+  $('f-serienummer').value = r?.serienummer  ?? '';
+  $('f-pris').value        = r?.innkjopspris ?? '';
+  $('f-dato').value        = r?.innkjopsdato ?? '';
 
   $('item-modal-overlay').classList.add('open');
 }
 
-function saveItem() {
+async function saveItem() {
   const vare = $('f-vare').value.trim();
   if (!vare) { alert('Vare/modell er påkrevd.'); return; }
 
-  API.saveUtstyr({
+  await API.saveUtstyr({
     id:           editId,
     kategori:     $('f-kategori').value,
     vare,
@@ -187,17 +190,17 @@ function saveItem() {
   render();
 }
 
-function deleteItem() {
+async function deleteItem() {
   if (!confirm('Slett dette utstyret?')) return;
-  API.deleteUtstyr(editId);
+  await API.deleteUtstyr(editId);
   closeModal('item-modal-overlay');
   render();
 }
 
 // ── QR ────────────────────────────────────────────────────────
-function renderQR() {
+async function renderQR() {
   if (editId === null) return;
-  const r = API.getUtstyrById(editId);
+  const r = await API.getUtstyrById(editId);
   if (!r) return;
 
   $('qr-vare-name').textContent = r.vare;
@@ -213,10 +216,10 @@ function renderQR() {
   });
 }
 
-function downloadQR() {
+async function downloadQR() {
   const canvas = $('qr-canvas').querySelector('canvas');
   if (!canvas) { alert('Generer QR-kode først.'); return; }
-  const r = editId !== null ? API.getUtstyrById(editId) : null;
+  const r = editId !== null ? await API.getUtstyrById(editId) : null;
   const a = document.createElement('a');
   a.href     = canvas.toDataURL('image/png');
   a.download = `QR_${r ? r.vare.replace(/\s+/g, '_') : 'utstyr'}.png`;
@@ -224,15 +227,59 @@ function downloadQR() {
 }
 
 // ════════════════════════════════════════════════════════════
+// ENHETER
+// ════════════════════════════════════════════════════════════
+
+async function renderItemEnheter() {
+  if (editId === null) {
+    $('item-enheter-list').innerHTML = '<p style="color:var(--muted);font-size:0.78rem">Lagre utstyret først for å registrere enheter.</p>';
+    return;
+  }
+  const enheter = await API.getEnheter(editId);
+  const el = $('item-enheter-list');
+  if (!enheter.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:0.78rem;padding:8px 0">Ingen individuelle enheter registrert ennå.</p>';
+  } else {
+    el.innerHTML = enheter.map(e => `
+      <div class="inline-logg-item">
+        <span class="inline-logg-date" style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2)">#${e.enhet_nr}</span>
+        <span class="inline-logg-text">
+          ${statusDot(e.status)}
+          ${e.serienummer ? `<span style="color:var(--muted);margin-left:10px">SN: ${e.serienummer}</span>` : ''}
+          ${e.kommentar   ? `<span style="color:var(--muted);margin-left:8px">— ${e.kommentar}</span>` : ''}
+        </span>
+        <button class="logg-del-btn" onclick="slett_enhet(${e.id})">×</button>
+      </div>`).join('');
+  }
+}
+
+async function leggTilEnhet() {
+  if (editId === null) { alert('Lagre utstyret først.'); return; }
+  const sn       = $('ne-serienummer').value.trim();
+  const kommentar= $('ne-kommentar').value.trim();
+  const nr       = await API.getNextEnhetNr(editId);
+  await API.saveEnhet({ utstyrId: editId, enhetNr: nr, serienummer: sn, kommentar });
+  $('ne-serienummer').value = '';
+  $('ne-kommentar').value   = '';
+  await renderItemEnheter();
+}
+
+async function slett_enhet(id) {
+  if (!confirm('Slett denne enheten?')) return;
+  await API.deleteEnhet(id);
+  await renderItemEnheter();
+}
+
+// ════════════════════════════════════════════════════════════
 // SERVICELOGG
 // ════════════════════════════════════════════════════════════
 
-function renderItemLogg() {
+async function renderItemLogg() {
   if (editId === null) {
     $('item-logg-list').innerHTML = '<p style="color:var(--muted);font-size:0.78rem">Lagre utstyret først for å loggføre.</p>';
     return;
   }
-  const entries = API.getLoggForUtstyr(editId).sort((a, b) => b.dato.localeCompare(a.dato));
+  const entries = (await API.getLoggForUtstyr(editId)).sort((a, b) => b.dato.localeCompare(a.dato));
   const el = $('item-logg-list');
   if (!entries.length) {
     el.innerHTML = '<p style="color:var(--muted);font-size:0.78rem;padding:8px 0">Ingen loggføringer ennå.</p>';
@@ -248,12 +295,12 @@ function renderItemLogg() {
     </div>`).join('');
 }
 
-function addLoggEntry() {
+async function addLoggEntry() {
   if (editId === null) { alert('Lagre utstyret først.'); return; }
   const desc = $('nl-desc').value.trim();
   if (!desc) { alert('Beskrivelse er påkrevd.'); return; }
 
-  API.saveLogg({
+  await API.saveLogg({
     utstyrId: editId,
     type:     $('nl-type').value,
     dato:     $('nl-dato').value || today(),
@@ -262,19 +309,27 @@ function addLoggEntry() {
   });
 
   $('nl-desc').value = '';
-  renderItemLogg();
-  renderLogg();
+  await renderItemLogg();
+  await renderLogg();
 }
 
-function renderLogg() {
-  const sorted = API.getLogg().sort((a, b) => b.dato.localeCompare(a.dato));
+async function renderLogg() {
+  const sorted = (await API.getLogg()).sort((a, b) => b.dato.localeCompare(a.dato));
   const el = $('logg-list');
   if (!sorted.length) {
     el.innerHTML = '<p style="color:var(--muted);padding:20px 0">Ingen loggføringer ennå.</p>';
     return;
   }
+
+  const utstyrMap = {};
+  for (const e of sorted) {
+    if (!utstyrMap[e.utstyrId]) {
+      utstyrMap[e.utstyrId] = await API.getUtstyrById(e.utstyrId);
+    }
+  }
+
   el.innerHTML = sorted.map(e => {
-    const item     = API.getUtstyrById(e.utstyrId);
+    const item     = utstyrMap[e.utstyrId];
     const tagCls   = e.type === 'service' ? 'logg-tag-service' : e.type === 'rep' ? 'logg-tag-rep' : 'logg-tag-notat';
     const typeLabel= e.type === 'service' ? 'Service' : e.type === 'rep' ? 'Reparasjon' : 'Notat';
     return `<div class="logg-item">
@@ -291,19 +346,20 @@ function renderLogg() {
   }).join('');
 }
 
-function openLoggModal(utstyrId = null) {
+async function openLoggModal(utstyrId = null) {
   $('lg-dato').value = today();
+  const utstyr = await API.getUtstyr();
   const sel = $('lg-utstyr');
-  sel.innerHTML = API.getUtstyr().map(r => `<option value="${r.id}">${r.vare} (${r.kategori})</option>`).join('');
+  sel.innerHTML = utstyr.map(r => `<option value="${r.id}">${r.vare} (${r.kategori})</option>`).join('');
   if (utstyrId !== null) sel.value = utstyrId;
   $('logg-modal-overlay').classList.add('open');
 }
 
-function saveLogg() {
+async function saveLogg() {
   const desc = $('lg-desc').value.trim();
   if (!desc) { alert('Beskrivelse er påkrevd.'); return; }
 
-  API.saveLogg({
+  await API.saveLogg({
     utstyrId: parseInt($('lg-utstyr').value),
     type:     $('lg-type').value,
     dato:     $('lg-dato').value || today(),
@@ -314,39 +370,51 @@ function saveLogg() {
   $('lg-desc').value = '';
   $('lg-av').value   = '';
   closeModal('logg-modal-overlay');
-  renderLogg();
+  await renderLogg();
 }
 
-function deleteLogg(id) {
+async function deleteLogg(id) {
   if (!confirm('Slett loggføring?')) return;
-  API.deleteLogg(id);
-  renderLogg();
+  await API.deleteLogg(id);
+  await renderLogg();
 }
 
 // ════════════════════════════════════════════════════════════
 // UTLÅN
 // ════════════════════════════════════════════════════════════
 
-function renderUtlaan() {
-  const el = $('utlaan-grid');
-  const all = API.getUtlaan();
+async function renderUtlaan() {
+  const el  = $('utlaan-grid');
+  const all = await API.getUtlaan();
   if (!all.length) {
     el.innerHTML = '<p style="color:var(--muted);padding:20px 0;grid-column:1/-1">Ingen aktive utlån.</p>';
     return;
   }
+
+  const utstyrMap = {};
+  const enhetMap  = {};
+  for (const u of all) {
+    if (!utstyrMap[u.utstyrId]) utstyrMap[u.utstyrId] = await API.getUtstyrById(u.utstyrId);
+    if (u.enhetId && !enhetMap[u.enhetId]) enhetMap[u.enhetId] = await API.getEnhetById(u.enhetId);
+  }
+
   el.innerHTML = all.map(u => {
-    const item = API.getUtstyrById(u.utstyrId);
-    const over = isOverdue(u.til);
+    const item  = utstyrMap[u.utstyrId];
+    const enhet = u.enhetId ? enhetMap[u.enhetId] : null;
+    const over  = isOverdue(u.til);
+    const enhetBadge = enhet
+      ? `<span class="enhet-badge">Enhet #${enhet.enhet_nr}${enhet.serienummer ? ' · ' + enhet.serienummer : ''}</span>`
+      : (u.antall > 1 ? `<span class="enhet-badge">×${u.antall}</span>` : '');
     return `<div class="utlaan-card">
       <div class="utlaan-card-header">
-        <div class="utlaan-card-title">${item ? item.vare : 'Ukjent'}</div>
+        <div class="utlaan-card-title">${item ? item.vare : 'Ukjent'}${enhetBadge ? ' ' + enhetBadge : ''}</div>
         <span class="utlaan-badge${over ? ' overdue' : ''}">${over ? 'Forfalt' : 'Utlånt'}</span>
       </div>
       <div class="utlaan-meta">
         <div><strong>Låntaker:</strong> ${u.laantaker}</div>
         <div><strong>Fra:</strong> ${u.fra}</div>
-        ${u.til  ? `<div><strong>Retur:</strong> ${u.til}</div>` : ''}
-        ${u.notat? `<div><strong>Notat:</strong> ${u.notat}</div>` : ''}
+        ${u.til   ? `<div><strong>Retur:</strong> ${u.til}</div>` : ''}
+        ${u.notat ? `<div><strong>Notat:</strong> ${u.notat}</div>` : ''}
       </div>
       <div class="utlaan-actions">
         <button class="btn btn-accent"  style="font-size:0.7rem;padding:7px 12px" onclick="returnerUtlaan(${u.id})">Returner</button>
@@ -356,68 +424,99 @@ function renderUtlaan() {
   }).join('');
 }
 
-function openUtlaanModal(id) {
+async function openUtlaanModal(id) {
   editUId = id;
   $('utlaan-modal-title').textContent = id === null ? 'Registrer utlån' : 'Rediger utlån';
   $('btn-utlaan-delete').style.display = id === null ? 'none' : 'inline-block';
 
+  const utstyr = await API.getUtstyr();
   const sel = $('ul-utstyr');
-  sel.innerHTML = API.getUtstyr().map(r => `<option value="${r.id}">${r.vare} (${r.kategori})</option>`).join('');
+  sel.innerHTML = utstyr.map(r => `<option value="${r.id}">${r.vare} (${r.kategori})</option>`).join('');
 
-  const u = id !== null ? API.getUtlaanById(id) : null;
+  const u = id !== null ? await API.getUtlaanById(id) : null;
   if (u) {
-    sel.value = u.utstyrId;
+    sel.value               = u.utstyrId;
     $('ul-laantaker').value = u.laantaker;
     $('ul-fra').value       = u.fra;
     $('ul-til').value       = u.til || '';
+    $('ul-antall').value    = u.antall || 1;
     $('ul-notat').value     = u.notat || '';
+    await oppdaterEnhetSelect(u.utstyrId, u.enhetId);
   } else {
     $('ul-laantaker').value = '';
     $('ul-fra').value       = today();
     $('ul-til').value       = '';
+    $('ul-antall').value    = 1;
     $('ul-notat').value     = '';
+    await oppdaterEnhetSelect(utstyr[0]?.id ?? null, null);
   }
+
   $('utlaan-modal-overlay').classList.add('open');
 }
 
-function saveUtlaan() {
+async function oppdaterEnhetSelect(utstyrId, valgtEnhetId = null) {
+  const sel = $('ul-enhet');
+  if (!utstyrId) { sel.innerHTML = '<option value="">— ingen enheter —</option>'; return; }
+  const enheter = await API.getEnheter(utstyrId);
+  sel.innerHTML = '<option value="">— velg enhet (valgfritt) —</option>'
+    + enheter.map(e => `<option value="${e.id}">#${e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''} [${e.status}]</option>`).join('');
+  if (valgtEnhetId) sel.value = valgtEnhetId;
+  oppdaterAntallFelt();
+}
+
+function oppdaterAntallFelt() {
+  const enhetId = $('ul-enhet').value;
+  const antallInput = $('ul-antall');
+  if (enhetId) {
+    antallInput.value    = 1;
+    antallInput.disabled = true;
+  } else {
+    antallInput.disabled = false;
+  }
+}
+
+async function saveUtlaan() {
   const laantaker = $('ul-laantaker').value.trim();
   if (!laantaker) { alert('Låntaker er påkrevd.'); return; }
 
-  API.saveUtlaan({
+  const enhetId = $('ul-enhet').value ? parseInt($('ul-enhet').value) : null;
+
+  await API.saveUtlaan({
     id:        editUId,
     utstyrId:  parseInt($('ul-utstyr').value),
+    enhetId,
     laantaker,
     fra:       $('ul-fra').value || today(),
     til:       $('ul-til').value,
+    antall:    enhetId ? 1 : (parseInt($('ul-antall').value) || 1),
     notat:     $('ul-notat').value.trim(),
   });
 
   closeModal('utlaan-modal-overlay');
-  renderUtlaan();
-  render();
+  await renderUtlaan();
+  await render();
 }
 
-function returnerUtlaan(id) {
-  const u    = API.getUtlaanById(id);
-  const item = u ? API.getUtstyrById(u.utstyrId) : null;
+async function returnerUtlaan(id) {
+  const u    = await API.getUtlaanById(id);
+  const item = u ? await API.getUtstyrById(u.utstyrId) : null;
   if (!confirm(`Marker "${item?.vare ?? 'utstyr'}" som returnert?`)) return;
-  API.returnerUtlaan(id);
-  renderUtlaan();
-  render();
+  await API.returnerUtlaan(id);
+  await renderUtlaan();
+  await render();
 }
 
-function deleteUtlaan() {
+async function deleteUtlaan() {
   if (!confirm('Fjern dette utlånet?')) return;
-  API.deleteUtlaan(editUId);
+  await API.deleteUtlaan(editUId);
   closeModal('utlaan-modal-overlay');
-  renderUtlaan();
-  render();
+  await renderUtlaan();
+  await render();
 }
 
 // ── CSV-eksport ───────────────────────────────────────────────
-function exportCSV() {
-  const rows    = getFiltered();
+async function exportCSV() {
+  const rows    = await getFiltered();
   const headers = ['Kategori','Vare','Kvantitet','Lokasjon','Status','Serienummer','Innkjøpspris','Innkjøpsdato','Kommentar'];
   const lines   = [
     headers.join(';'),
@@ -427,7 +526,7 @@ function exportCSV() {
         .join(';')
     ),
   ];
-  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
   const a    = document.createElement('a');
   a.href     = URL.createObjectURL(blob);
   a.download = 'Petors_Anlegg.csv';
@@ -443,7 +542,7 @@ async function initApp() {
   );
   $('nl-dato').value = today();
 
-  render();
+  await render();
 }
 
 initApp();

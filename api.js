@@ -61,45 +61,106 @@ const API = (() => {
     check(error, 'setUtstyrStatus');
   }
 
+  // ── Enheter ──────────────────────────────────────────────────
+
+  async function getEnheter(utstyrId) {
+    const { data, error } = await sb.from('enheter').select('*').eq('utstyr_id', utstyrId).order('enhet_nr');
+    check(error, 'getEnheter'); return data;
+  }
+
+  async function getEnhetById(id) {
+    const { data, error } = await sb.from('enheter').select('*').eq('id', id).single();
+    check(error, 'getEnhetById'); return data;
+  }
+
+  async function getNextEnhetNr(utstyrId) {
+    const { data } = await sb.from('enheter').select('enhet_nr').eq('utstyr_id', utstyrId).order('enhet_nr', { ascending: false }).limit(1);
+    return data && data.length > 0 ? data[0].enhet_nr + 1 : 1;
+  }
+
+  async function saveEnhet(entry) {
+    const row = {
+      utstyr_id:   entry.utstyrId,
+      enhet_nr:    entry.enhetNr,
+      serienummer: entry.serienummer || null,
+      status:      entry.status || 'OK',
+      kommentar:   entry.kommentar || null,
+    };
+    if (entry.id != null) {
+      const { data, error } = await sb.from('enheter').update(row).eq('id', entry.id).select().single();
+      check(error, 'saveEnhet (update)'); return data;
+    } else {
+      const { data, error } = await sb.from('enheter').insert(row).select().single();
+      check(error, 'saveEnhet (insert)'); return data;
+    }
+  }
+
+  async function deleteEnhet(id) {
+    const { error } = await sb.from('enheter').delete().eq('id', id);
+    check(error, 'deleteEnhet');
+  }
+
+  async function setEnhetStatus(id, status) {
+    const { error } = await sb.from('enheter').update({ status }).eq('id', id);
+    check(error, 'setEnhetStatus');
+  }
+
+  // ── Utlån ────────────────────────────────────────────────────
+
   async function getUtlaan() {
     const { data, error } = await sb.from('utlaan').select('*').order('fra', { ascending: false });
     check(error, 'getUtlaan');
-    return data.map(u => ({ ...u, utstyrId: u.utstyr_id }));
+    return data.map(u => ({ ...u, utstyrId: u.utstyr_id, enhetId: u.enhet_id }));
   }
 
   async function getUtlaanById(id) {
     const { data, error } = await sb.from('utlaan').select('*').eq('id', id).single();
     check(error, 'getUtlaanById');
-    return { ...data, utstyrId: data.utstyr_id };
+    return { ...data, utstyrId: data.utstyr_id, enhetId: data.enhet_id };
   }
 
   async function saveUtlaan(entry) {
     const row = {
-      utstyr_id: entry.utstyrId, laantaker: entry.laantaker,
-      fra: entry.fra, til: entry.til || null, notat: entry.notat || null,
+      utstyr_id: entry.utstyrId,
+      enhet_id:  entry.enhetId || null,
+      laantaker: entry.laantaker,
+      fra:       entry.fra,
+      til:       entry.til || null,
+      antall:    entry.antall || 1,
+      notat:     entry.notat || null,
     };
     if (entry.id != null) {
       const { data, error } = await sb.from('utlaan').update(row).eq('id', entry.id).select().single();
       check(error, 'saveUtlaan (update)');
-      return { ...data, utstyrId: data.utstyr_id };
+      return { ...data, utstyrId: data.utstyr_id, enhetId: data.enhet_id };
     } else {
       const { data, error } = await sb.from('utlaan').insert(row).select().single();
       check(error, 'saveUtlaan (insert)');
-      await setUtstyrStatus(entry.utstyrId, 'Utlånt');
-      return { ...data, utstyrId: data.utstyr_id };
+      if (entry.enhetId) {
+        await setEnhetStatus(entry.enhetId, 'Utlånt');
+      } else {
+        await setUtstyrStatus(entry.utstyrId, 'Utlånt');
+      }
+      return { ...data, utstyrId: data.utstyr_id, enhetId: data.enhet_id };
     }
   }
 
   async function returnerUtlaan(id) {
     const u = await getUtlaanById(id);
     await sb.from('utlaan').delete().eq('id', id);
-    await setUtstyrStatus(u.utstyrId, 'OK');
+    if (u.enhetId) {
+      await setEnhetStatus(u.enhetId, 'OK');
+    } else {
+      await setUtstyrStatus(u.utstyrId, 'OK');
+    }
   }
 
   async function deleteUtlaan(id) {
     const { error } = await sb.from('utlaan').delete().eq('id', id);
     check(error, 'deleteUtlaan');
   }
+
+  // ── Logg ─────────────────────────────────────────────────────
 
   async function getLogg() {
     const { data, error } = await sb.from('logg').select('*').order('dato', { ascending: false });
@@ -131,6 +192,7 @@ const API = (() => {
   return {
     init,
     getUtstyr, getUtstyrById, saveUtstyr, deleteUtstyr, setUtstyrStatus,
+    getEnheter, getEnhetById, getNextEnhetNr, saveEnhet, deleteEnhet, setEnhetStatus,
     getUtlaan, getUtlaanById, saveUtlaan, returnerUtlaan, deleteUtlaan,
     getLogg, getLoggForUtstyr, saveLogg, deleteLogg,
   };
