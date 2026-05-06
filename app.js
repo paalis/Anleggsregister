@@ -199,16 +199,30 @@ async function deleteItem() {
 // ── QR ────────────────────────────────────────────────────────
 async function renderQR() {
   if (editId === null) return;
-  const r = await API.getUtstyrById(editId);
-  if (!r) return;
+  const r       = await API.getUtstyrById(editId);
+  const enheter = await API.getEnheter(editId);
 
-  $('qr-vare-name').textContent = r.vare;
-  $('qr-vare-meta').textContent = `${r.kategori} · ${r.lokasjon || '—'} · ID: ${r.id}`;
+  // Bygg enhet-dropdown
+  const sel = $('qr-enhet-select');
+  sel.innerHTML = enheter.length
+    ? enheter.map(e => `<option value="${e.id}" data-asset="${e.asset_id || ''}">${e.asset_id || '#' + e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''}</option>`).join('')
+    : '<option value="">Ingen enheter registrert</option>';
+
+  const enhet = enheter.find(e => e.id === parseInt(sel.value)) || enheter[0] || null;
+
+  const assetId   = enhet?.asset_id || null;
+  const visNavn   = assetId || r.vare;
+  const qrTekst   = assetId
+    ? JSON.stringify({ asset_id: assetId, vare: r.vare, kategori: r.kategori, serienummer: enhet?.serienummer || '' })
+    : JSON.stringify({ id: r.id, vare: r.vare, kategori: r.kategori });
+
+  $('qr-vare-name').textContent = visNavn;
+  $('qr-vare-meta').textContent = `${r.vare} · ${r.kategori}${enhet?.serienummer ? ' · SN: ' + enhet.serienummer : ''}`;
 
   const el = $('qr-canvas');
   el.innerHTML = '';
   new QRCode(el, {
-    text: JSON.stringify({ id: r.id, vare: r.vare, kategori: r.kategori, serienummer: r.serienummer || '' }),
+    text: qrTekst,
     width: 180, height: 180,
     colorDark: '#000', colorLight: '#fff',
     correctLevel: QRCode.CorrectLevel.M,
@@ -218,10 +232,13 @@ async function renderQR() {
 async function downloadQR() {
   const canvas = $('qr-canvas').querySelector('canvas');
   if (!canvas) { alert('Generer QR-kode først.'); return; }
-  const r = editId !== null ? await API.getUtstyrById(editId) : null;
+  const sel     = $('qr-enhet-select');
+  const assetId = sel.options[sel.selectedIndex]?.dataset.asset;
+  const r       = editId !== null ? await API.getUtstyrById(editId) : null;
+  const navn    = assetId || (r ? r.vare.replace(/\s+/g, '_') : 'utstyr');
   const a = document.createElement('a');
   a.href     = canvas.toDataURL('image/png');
-  a.download = `QR_${r ? r.vare.replace(/\s+/g, '_') : 'utstyr'}.png`;
+  a.download = `QR_${navn}.png`;
   a.click();
 }
 
