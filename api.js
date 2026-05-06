@@ -78,9 +78,17 @@ const API = (() => {
     return data && data.length > 0 ? data[0].enhet_nr + 1 : 1;
   }
 
-  function lagAssetId(kategori, enhetId) {
+  async function lagAssetId(kategori) {
     const prefix = kategori.replace(/[^a-zA-ZæøåÆØÅ]/g, '').substring(0, 2).toUpperCase();
-    return `${prefix}-${String(enhetId).padStart(3, '0')}`;
+    const { data } = await sb.from('enheter').select('asset_id').like('asset_id', `${prefix}-%`);
+    let nestNum = 1;
+    if (data && data.length > 0) {
+      const nums = data
+        .map(e => parseInt((e.asset_id || '').split('-')[1] || '0'))
+        .filter(n => n > 0);
+      if (nums.length > 0) nestNum = Math.max(...nums) + 1;
+    }
+    return `${prefix}-${String(nestNum).padStart(3, '0')}`;
   }
 
   async function saveEnhet(entry) {
@@ -99,7 +107,7 @@ const API = (() => {
       const { data, error } = await sb.from('enheter').insert(row).select().single();
       check(error, 'saveEnhet (insert)');
       const utstyr   = await getUtstyrById(entry.utstyrId);
-      const asset_id = lagAssetId(utstyr.kategori, data.id);
+      const asset_id = await lagAssetId(utstyr.kategori);
       await sb.from('enheter').update({ asset_id }).eq('id', data.id);
       return { ...data, asset_id };
     }
