@@ -36,7 +36,7 @@ const API = (() => {
 
   async function saveUtstyr(item) {
     const row = {
-      kategori: item.kategori, vare: item.vare, kvantitet: item.kvantitet,
+      kategori: item.kategori, vare: item.vare,
       lokasjon: item.lokasjon, kommentar: item.kommentar, status: item.status,
       serienummer: item.serienummer,
       innkjopspris: item.innkjopspris || null,
@@ -165,23 +165,27 @@ const API = (() => {
   async function getLogg() {
     const { data, error } = await sb.from('logg').select('*').order('dato', { ascending: false });
     check(error, 'getLogg');
-    return data.map(l => ({ ...l, utstyrId: l.utstyr_id, desc: l.beskrivelse, av: l.utfort_av }));
+    return data.map(l => ({ ...l, utstyrId: l.utstyr_id, enhetId: l.enhet_id, desc: l.beskrivelse, av: l.utfort_av }));
   }
 
   async function getLoggForUtstyr(id) {
     const { data, error } = await sb.from('logg').select('*').eq('utstyr_id', id).order('dato', { ascending: false });
     check(error, 'getLoggForUtstyr');
-    return data.map(l => ({ ...l, utstyrId: l.utstyr_id, desc: l.beskrivelse, av: l.utfort_av }));
+    return data.map(l => ({ ...l, utstyrId: l.utstyr_id, enhetId: l.enhet_id, desc: l.beskrivelse, av: l.utfort_av }));
   }
 
   async function saveLogg(entry) {
     const row = {
-      utstyr_id: entry.utstyrId, type: entry.type, dato: entry.dato,
-      beskrivelse: entry.desc, utfort_av: entry.av || null,
+      utstyr_id: entry.utstyrId,
+      enhet_id:  entry.enhetId || null,
+      type:      entry.type,
+      dato:      entry.dato,
+      beskrivelse: entry.desc,
+      utfort_av: entry.av || null,
     };
     const { data, error } = await sb.from('logg').insert(row).select().single();
     check(error, 'saveLogg');
-    return { ...data, utstyrId: data.utstyr_id, desc: data.beskrivelse, av: data.utfort_av };
+    return { ...data, utstyrId: data.utstyr_id, enhetId: data.enhet_id, desc: data.beskrivelse, av: data.utfort_av };
   }
 
   async function deleteLogg(id) {

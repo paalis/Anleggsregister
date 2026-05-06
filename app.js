@@ -158,7 +158,7 @@ async function openItemModal(id) {
   const r = id !== null ? await API.getUtstyrById(id) : null;
   $('f-kategori').value    = r?.kategori     ?? 'Sub';
   $('f-vare').value        = r?.vare         ?? '';
-  $('f-kvantitet').value   = r?.kvantitet    ?? 1;
+  $('f-kvantitet').textContent = r?.kvantitet ?? 0;
   $('f-lokasjon').value    = r?.lokasjon     ?? '';
   $('f-kommentar').value   = r?.kommentar    ?? '';
   $('f-status').value      = r?.status       ?? 'OK';
@@ -177,7 +177,6 @@ async function saveItem() {
     id:           editId,
     kategori:     $('f-kategori').value,
     vare,
-    kvantitet:    parseInt($('f-kvantitet').value) || 1,
     lokasjon:     $('f-lokasjon').value.trim(),
     kommentar:    $('f-kommentar').value.trim(),
     status:       $('f-status').value,
@@ -285,14 +284,26 @@ async function renderItemLogg() {
     el.innerHTML = '<p style="color:var(--muted);font-size:0.78rem;padding:8px 0">Ingen loggføringer ennå.</p>';
     return;
   }
-  el.innerHTML = entries.map(e => `
-    <div class="inline-logg-item">
+
+  const enheter = await API.getEnheter(editId);
+  const enhetMap = Object.fromEntries(enheter.map(e => [e.id, e]));
+
+  el.innerHTML = entries.map(e => {
+    const enhet = e.enhetId ? enhetMap[e.enhetId] : null;
+    const enhetLabel = enhet ? `<span class="enhet-badge">#${enhet.enhet_nr}${enhet.serienummer ? ' · ' + enhet.serienummer : ''}</span> ` : '';
+    return `<div class="inline-logg-item">
       <span class="inline-logg-date">${e.dato}</span>
       <span class="inline-logg-text">
-        <strong>${e.type === 'service' ? 'Service' : e.type === 'rep' ? 'Reparasjon' : 'Notat'}</strong>
+        ${enhetLabel}<strong>${e.type === 'service' ? 'Service' : e.type === 'rep' ? 'Reparasjon' : 'Notat'}</strong>
         — ${e.desc}${e.av ? ' (' + e.av + ')' : ''}
       </span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+
+  // Fyll enhet-dropdown i logg-skjema
+  const sel = $('nl-enhet');
+  sel.innerHTML = '<option value="">— hele modellen —</option>'
+    + enheter.map(e => `<option value="${e.id}">#${e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''}</option>`).join('');
 }
 
 async function addLoggEntry() {
@@ -302,6 +313,7 @@ async function addLoggEntry() {
 
   await API.saveLogg({
     utstyrId: editId,
+    enhetId:  $('nl-enhet').value ? parseInt($('nl-enhet').value) : null,
     type:     $('nl-type').value,
     dato:     $('nl-dato').value || today(),
     desc,
@@ -346,12 +358,21 @@ async function renderLogg() {
   }).join('');
 }
 
+async function oppdaterLoggEnhetSelect(utstyrId) {
+  const sel = $('lg-enhet');
+  if (!utstyrId) { sel.innerHTML = '<option value="">— hele modellen —</option>'; return; }
+  const enheter = await API.getEnheter(parseInt(utstyrId));
+  sel.innerHTML = '<option value="">— hele modellen —</option>'
+    + enheter.map(e => `<option value="${e.id}">#${e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''}</option>`).join('');
+}
+
 async function openLoggModal(utstyrId = null) {
   $('lg-dato').value = today();
   const utstyr = await API.getUtstyr();
   const sel = $('lg-utstyr');
   sel.innerHTML = utstyr.map(r => `<option value="${r.id}">${r.vare} (${r.kategori})</option>`).join('');
   if (utstyrId !== null) sel.value = utstyrId;
+  await oppdaterLoggEnhetSelect(sel.value);
   $('logg-modal-overlay').classList.add('open');
 }
 
@@ -361,6 +382,7 @@ async function saveLogg() {
 
   await API.saveLogg({
     utstyrId: parseInt($('lg-utstyr').value),
+    enhetId:  $('lg-enhet').value ? parseInt($('lg-enhet').value) : null,
     type:     $('lg-type').value,
     dato:     $('lg-dato').value || today(),
     desc,

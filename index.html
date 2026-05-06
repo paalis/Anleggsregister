@@ -250,7 +250,7 @@
           <div class="form-group"><label>Status *</label>
             <select id="f-status"><option>OK</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
           <div class="form-group form-full"><label>Vare / Modell *</label><input type="text" id="f-vare" placeholder="f.eks. Shure SM58"></div>
-          <div class="form-group"><label>Kvantitet *</label><input type="number" id="f-kvantitet" min="1" value="1"></div>
+          <div class="form-group"><label>Antall enheter</label><div style="padding:10px 0;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:var(--accent2)" id="f-kvantitet">—</div></div>
           <div class="form-group"><label>Lokasjon</label><input type="text" id="f-lokasjon" placeholder="f.eks. Selbu"></div>
           <div class="form-group"><label>Serienummer / Asset-ID</label><input type="text" id="f-serienummer" placeholder="SN-2024-001"></div>
           <div class="form-group"><label>Innkjøpspris (NOK)</label><input type="number" id="f-pris" min="0" placeholder="0"></div>
@@ -272,6 +272,8 @@
           <div class="form-group"><label>Type</label>
             <select id="nl-type"><option value="service">Service</option><option value="rep">Reparasjon</option><option value="notat">Notat</option></select></div>
           <div class="form-group"><label>Dato</label><input type="date" id="nl-dato"></div>
+          <div class="form-group form-full"><label>Gjelder enhet (valgfritt)</label>
+            <select id="nl-enhet"><option value="">— hele modellen —</option></select></div>
           <div class="form-group form-full"><label>Beskrivelse</label><textarea id="nl-desc" rows="2" placeholder="Hva ble gjort?"></textarea></div>
         </div>
         <button class="btn btn-ghost" style="margin-top:4px" onclick="addLoggEntry()">+ Legg til loggføring</button>
@@ -331,7 +333,10 @@
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group form-full"><label>Utstyr *</label><select id="lg-utstyr"></select></div>
+        <div class="form-group form-full"><label>Utstyr *</label>
+          <select id="lg-utstyr" onchange="oppdaterLoggEnhetSelect(this.value)"></select></div>
+        <div class="form-group form-full"><label>Gjelder enhet (valgfritt)</label>
+          <select id="lg-enhet"><option value="">— hele modellen —</option></select></div>
         <div class="form-group"><label>Type</label>
           <select id="lg-type"><option value="service">Service</option><option value="rep">Reparasjon</option><option value="notat">Notat</option></select></div>
         <div class="form-group"><label>Dato *</label><input type="date" id="lg-dato"></div>
