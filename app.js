@@ -20,9 +20,10 @@ const CAT_COLORS = {
 };
 
 // ── State ────────────────────────────────────────────────────
-let sortCol = 'kategori', sortDir = 1;
-let editId  = null;   // utstyr
-let editUId = null;   // utlån
+let sortCol    = 'kategori', sortDir = 1;
+let editId     = null;   // utstyr
+let editUId    = null;   // utlån
+let editEnhetId = null;  // enhet som redigeres
 
 // ── Hjelpere ─────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -263,9 +264,11 @@ async function renderItemEnheter() {
         <span class="inline-logg-date" style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2)">${e.asset_id || '#' + e.enhet_nr}</span>
         <span class="inline-logg-text">
           ${statusDot(e.status)}
+          ${e.lokasjon    ? `<span style="color:var(--muted);margin-left:10px">📍 ${e.lokasjon}</span>` : ''}
           ${e.serienummer ? `<span style="color:var(--muted);margin-left:10px">SN: ${e.serienummer}</span>` : ''}
           ${e.kommentar   ? `<span style="color:var(--muted);margin-left:8px">— ${e.kommentar}</span>` : ''}
         </span>
+        <button class="logg-del-btn" style="margin-right:2px" onclick="redigerEnhet(${e.id})" title="Rediger">✎</button>
         <button class="logg-del-btn" onclick="slett_enhet(${e.id})">×</button>
       </div>`).join('');
   }
@@ -273,13 +276,54 @@ async function renderItemEnheter() {
 
 async function leggTilEnhet() {
   if (editId === null) { alert('Lagre utstyret først.'); return; }
-  const sn       = $('ne-serienummer').value.trim();
-  const kommentar= $('ne-kommentar').value.trim();
-  const nr       = await API.getNextEnhetNr(editId);
-  await API.saveEnhet({ utstyrId: editId, enhetNr: nr, serienummer: sn, kommentar });
+  const nr = await API.getNextEnhetNr(editId);
+  await API.saveEnhet({
+    utstyrId:    editId,
+    enhetNr:     nr,
+    lokasjon:    $('ne-lokasjon').value.trim(),
+    serienummer: $('ne-serienummer').value.trim(),
+    kommentar:   $('ne-kommentar').value.trim(),
+  });
+  $('ne-lokasjon').value    = '';
   $('ne-serienummer').value = '';
   $('ne-kommentar').value   = '';
   await renderItemEnheter();
+}
+
+async function redigerEnhet(id) {
+  const enheter = await API.getEnheter(editId);
+  const e = enheter.find(x => x.id === id);
+  if (!e) return;
+  editEnhetId = id;
+  $('ee-lokasjon').value    = e.lokasjon    || '';
+  $('ee-serienummer').value = e.serienummer || '';
+  $('ee-kommentar').value   = e.kommentar   || '';
+  $('ee-status').value      = e.status      || 'OK';
+  $('enhet-edit-form').style.display = 'block';
+  $('enhet-edit-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function lagreEnhetRedigering() {
+  if (!editEnhetId) return;
+  const enheter = await API.getEnheter(editId);
+  const e = enheter.find(x => x.id === editEnhetId);
+  await API.saveEnhet({
+    id:          editEnhetId,
+    utstyrId:    e.utstyr_id,
+    enhetNr:     e.enhet_nr,
+    lokasjon:    $('ee-lokasjon').value.trim(),
+    serienummer: $('ee-serienummer').value.trim(),
+    kommentar:   $('ee-kommentar').value.trim(),
+    status:      $('ee-status').value,
+  });
+  editEnhetId = null;
+  $('enhet-edit-form').style.display = 'none';
+  await renderItemEnheter();
+}
+
+function avbrytEnhetRedigering() {
+  editEnhetId = null;
+  $('enhet-edit-form').style.display = 'none';
 }
 
 async function slett_enhet(id) {

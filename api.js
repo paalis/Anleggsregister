@@ -90,6 +90,7 @@ const API = (() => {
       serienummer: entry.serienummer || null,
       status:      entry.status || 'OK',
       kommentar:   entry.kommentar || null,
+      lokasjon:    entry.lokasjon || null,
     };
     if (entry.id != null) {
       const { data, error } = await sb.from('enheter').update(row).eq('id', entry.id).select().single();

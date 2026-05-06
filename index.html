@@ -260,9 +260,29 @@
       </div>
       <div class="modal-tab-content" id="tab-enheter">
         <div class="inline-logg" id="item-enheter-list"></div>
+
+        <!-- Rediger eksisterende enhet -->
+        <div id="enhet-edit-form" style="display:none;border:1px solid var(--accent2)44;border-radius:8px;padding:14px;margin-bottom:14px;background:var(--accent2)08">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent2);margin-bottom:10px">Rediger enhet</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Lokasjon</label><input type="text" id="ee-lokasjon" placeholder="f.eks. Selbu"></div>
+            <div class="form-group"><label>Status</label>
+              <select id="ee-status"><option>OK</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
+            <div class="form-group"><label>Serienummer</label><input type="text" id="ee-serienummer" placeholder="SN-001"></div>
+            <div class="form-group"><label>Kommentar</label><input type="text" id="ee-kommentar" placeholder="f.eks. koffert A"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-accent" style="font-size:0.72rem;padding:8px 14px" onclick="lagreEnhetRedigering()">Lagre</button>
+            <button class="btn btn-ghost"  style="font-size:0.72rem;padding:8px 14px" onclick="avbrytEnhetRedigering()">Avbryt</button>
+          </div>
+        </div>
+
+        <!-- Legg til ny enhet -->
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px">Legg til enhet</div>
         <div class="form-grid">
+          <div class="form-group"><label>Lokasjon</label><input type="text" id="ne-lokasjon" placeholder="f.eks. Selbu"></div>
           <div class="form-group"><label>Serienummer (valgfritt)</label><input type="text" id="ne-serienummer" placeholder="SN-001"></div>
-          <div class="form-group"><label>Kommentar (valgfritt)</label><input type="text" id="ne-kommentar" placeholder="f.eks. koffert A"></div>
+          <div class="form-group form-full"><label>Kommentar (valgfritt)</label><input type="text" id="ne-kommentar" placeholder="f.eks. koffert A"></div>
         </div>
         <button class="btn btn-ghost" style="margin-top:8px" onclick="leggTilEnhet()">+ Legg til enhet</button>
       </div>
