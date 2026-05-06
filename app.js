@@ -295,11 +295,12 @@ async function redigerEnhet(id) {
   const e = enheter.find(x => x.id === id);
   if (!e) return;
   editEnhetId = id;
-  $('ee-asset-id').textContent = e.asset_id || '#' + e.enhet_nr;
-  $('ee-lokasjon').value       = e.lokasjon    || '';
-  $('ee-serienummer').value    = e.serienummer || '';
-  $('ee-kommentar').value      = e.kommentar   || '';
-  $('ee-status').value         = e.status      || 'OK';
+  $('ee-asset-id').textContent         = e.asset_id || '#' + e.enhet_nr;
+  $('ee-asset-id-display').textContent = e.asset_id || '#' + e.enhet_nr;
+  $('ee-lokasjon').value               = e.lokasjon    || '';
+  $('ee-serienummer').value            = e.serienummer || '';
+  $('ee-kommentar').value              = e.kommentar   || '';
+  $('ee-status').value                 = e.status      || 'OK';
   $('enhet-edit-form').style.display = 'block';
   $('enhet-edit-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }

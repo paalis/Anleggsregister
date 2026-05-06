@@ -265,11 +265,13 @@
         <div id="enhet-edit-form" style="display:none;border:1px solid var(--accent2)44;border-radius:8px;padding:14px;margin-bottom:14px;background:var(--accent2)08">
           <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent2);margin-bottom:10px">Rediger enhet — <span id="ee-asset-id" style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem"></span></div>
           <div class="form-grid">
-            <div class="form-group"><label>Lokasjon</label><input type="text" id="ee-lokasjon" placeholder="f.eks. Selbu"></div>
+            <div class="form-group"><label>Asset-ID</label>
+              <div id="ee-asset-id-display" style="padding:10px 12px;border:1px solid var(--border);border-radius:6px;color:var(--accent2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem">—</div></div>
             <div class="form-group"><label>Status</label>
               <select id="ee-status"><option>OK</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
-            <div class="form-group"><label>Serienummer</label><input type="text" id="ee-serienummer" placeholder="SN-001"></div>
-            <div class="form-group"><label>Kommentar</label><input type="text" id="ee-kommentar" placeholder="f.eks. koffert A"></div>
+            <div class="form-group"><label>Lokasjon</label><input type="text" id="ee-lokasjon" placeholder="f.eks. Selbu"></div>
+            <div class="form-group"><label>Serienummer (produsentens SN)</label><input type="text" id="ee-serienummer" placeholder="f.eks. 3B7X92"></div>
+            <div class="form-group form-full"><label>Kommentar</label><input type="text" id="ee-kommentar" placeholder="f.eks. koffert A"></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
             <button class="btn btn-accent" style="font-size:0.72rem;padding:8px 14px" onclick="lagreEnhetRedigering()">Lagre</button>
