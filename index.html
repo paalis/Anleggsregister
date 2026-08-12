@@ -2,9 +2,19 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Petors AS — Utstyrsregister</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- PWA / iOS "Legg til på Hjem-skjerm" -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0f14">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Utstyrsregister">
+
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -16,9 +26,14 @@
     --cat-mikrofon: #38bdf8; --cat-di: #a3e635; --cat-stativ: #e879f9; --cat-default: #94a3b8;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace;
+    min-height: 100vh; min-height: 100dvh;
+    padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 
-  header { border-bottom: 1px solid var(--border); padding: 28px 40px 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+  header { border-bottom: 1px solid var(--border); padding: calc(28px + env(safe-area-inset-top)) 40px 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
   .logo-block svg.site-logo { height: 50px; width: auto; display: block; }
   .logo-block p { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 6px; }
   .header-stats { display: flex; gap: 32px; }
@@ -138,11 +153,13 @@
   .section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
 
   @media (max-width: 700px) {
-    header { flex-direction: column; align-items: flex-start; padding: 20px; }
+    header { flex-direction: column; align-items: flex-start; padding: calc(20px + env(safe-area-inset-top)) 20px 20px; }
     .header-stats { gap: 20px; }
     .toolbar, .nav-tabs { padding: 16px 20px; }
     .table-wrap, .logg-wrap, .utlaan-grid, .section-header { padding: 16px 20px; }
     .form-grid { grid-template-columns: 1fr; }
+    /* iOS Safari zoomer inn ved fokus på felt med font-size < 16px */
+    input[type="text"], input[type="number"], input[type="date"], select, textarea { font-size: 16px; }
   }
 </style>
 </head>
