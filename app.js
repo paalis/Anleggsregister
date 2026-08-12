@@ -101,15 +101,15 @@ async function render() {
     noR.style.display = 'none';
     tbody.innerHTML = rows.map(r => `
       <tr onclick="openItemModal(${r.id})">
-        <td><span class="cat-badge" style="color:${catColor(r.kategori)};border-color:${catColor(r.kategori)}22;background:${catColor(r.kategori)}11">${r.kategori}</span></td>
-        <td>${r.vare || '—'}</td>
-        <td><span class="qty-badge">${r.kvantitet}</span></td>
-        <td>${r.lokasjon || '—'}</td>
-        <td>${statusDot(r.status)}</td>
-        <td style="color:var(--muted);font-size:0.78rem">${r.serienummer || '—'}</td>
-        <td style="color:var(--muted);font-size:0.78rem">${r.innkjopspris ? Number(r.innkjopspris).toLocaleString('nb-NO') : '—'}</td>
-        <td style="color:var(--muted);font-size:0.78rem">${r.innkjopsdato || '—'}</td>
-        <td style="color:var(--muted);font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.kommentar || ''}</td>
+        <td data-label="Kategori"><span class="cat-badge" style="color:${catColor(r.kategori)};border-color:${catColor(r.kategori)}22;background:${catColor(r.kategori)}11">${r.kategori}</span></td>
+        <td data-label="Vare / Modell">${r.vare || '—'}</td>
+        <td data-label="Ant."><span class="qty-badge">${r.kvantitet}</span></td>
+        <td data-label="Lokasjon">${r.lokasjon || '—'}</td>
+        <td data-label="Status">${statusDot(r.status)}</td>
+        <td data-label="Serienr." style="color:var(--muted);font-size:0.78rem">${r.serienummer || '—'}</td>
+        <td data-label="Pris (NOK)" style="color:var(--muted);font-size:0.78rem">${r.innkjopspris ? Number(r.innkjopspris).toLocaleString('nb-NO') : '—'}</td>
+        <td data-label="Dato" style="color:var(--muted);font-size:0.78rem">${r.innkjopsdato || '—'}</td>
+        <td data-label="Kommentar" style="color:var(--muted);font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.kommentar || ''}</td>
       </tr>`).join('');
   }
 

@@ -15,6 +15,8 @@
 <meta name="apple-mobile-web-app-title" content="Utstyrsregister">
 
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -110,7 +112,7 @@
   .logg-tag-service { color: var(--service); border-color: var(--service)44; background: var(--service)11; }
   .logg-tag-rep { color: var(--accent2); border-color: var(--accent2)44; background: var(--accent2)11; }
   .logg-tag-notat { color: var(--muted); border-color: var(--border); }
-  .logg-del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px; }
+  .logg-del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 6px; border-radius: 6px; min-width: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; }
   .logg-del-btn:hover { color: var(--danger); background: var(--danger)11; }
 
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
@@ -119,7 +121,7 @@
   .modal-overlay.open .modal { transform: translateY(0); }
   .modal-header { padding: 24px 28px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
   .modal-header h2 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; }
-  .modal-close { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; line-height: 1; transition: color 0.15s; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; line-height: 1; transition: color 0.15s; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; margin: -10px -8px -10px 0; }
   .modal-close:hover { color: var(--text); }
   .modal-body { padding: 24px 28px; }
   .modal-footer { padding: 16px 28px 24px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); }
@@ -160,6 +162,28 @@
     .form-grid { grid-template-columns: 1fr; }
     /* iOS Safari zoomer inn ved fokus på felt med font-size < 16px */
     input[type="text"], input[type="number"], input[type="date"], select, textarea { font-size: 16px; }
+
+    /* Kortvisning av tabellen i stedet for horisontal scroll */
+    .table-wrap { overflow-x: visible; }
+    table, thead, tbody, tr, td { display: block; }
+    thead { display: none; }
+    tbody tr {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 4px 14px; margin-bottom: 12px;
+    }
+    td {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      text-align: right; white-space: normal !important; max-width: none !important;
+      overflow: visible !important; text-overflow: clip !important;
+    }
+    td:last-child { border-bottom: none; }
+    td::before {
+      content: attr(data-label);
+      font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.68rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+      text-align: left; flex-shrink: 0;
+    }
   }
 </style>
 </head>
