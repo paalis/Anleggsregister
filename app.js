@@ -31,6 +31,23 @@ function today() { return new Date().toISOString().split('T')[0]; }
 function catColor(cat) { return CAT_COLORS[cat] || CAT_COLORS['Annet']; }
 function isOverdue(til) { return til && til < today(); }
 
+function showToast(message, type = 'info') {
+  const container = $('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type === 'error' ? ' toast-error' : '');
+  el.textContent = message;
+  container.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 200);
+  }, 3000);
+}
+
+let loadingCount = 0;
+function showLoading() { loadingCount++; $('loading-bar').classList.add('active'); }
+function hideLoading() { loadingCount = Math.max(0, loadingCount - 1); if (loadingCount === 0) $('loading-bar').classList.remove('active'); }
+
 function statusDot(s) {
   const cls = s === 'OK'      ? 'dot-ok'
             : s === 'Service' ? 'dot-service'
@@ -90,38 +107,44 @@ async function getFiltered() {
 }
 
 async function render() {
-  const rows  = await getFiltered();
-  const tbody = $('table-body');
-  const noR   = $('no-results');
+  $('mobile-sort').value = sortCol;
+  showLoading();
+  try {
+    const rows  = await getFiltered();
+    const tbody = $('table-body');
+    const noR   = $('no-results');
 
-  if (!rows.length) {
-    tbody.innerHTML = '';
-    noR.style.display = 'block';
-  } else {
-    noR.style.display = 'none';
-    tbody.innerHTML = rows.map(r => `
-      <tr onclick="openItemModal(${r.id})">
-        <td><span class="cat-badge" style="color:${catColor(r.kategori)};border-color:${catColor(r.kategori)}22;background:${catColor(r.kategori)}11">${r.kategori}</span></td>
-        <td>${r.vare || '—'}</td>
-        <td><span class="qty-badge">${r.kvantitet}</span></td>
-        <td>${r.lokasjon || '—'}</td>
-        <td>${statusDot(r.status)}</td>
-        <td style="color:var(--muted);font-size:0.78rem">${r.serienummer || '—'}</td>
-        <td style="color:var(--muted);font-size:0.78rem">${r.innkjopspris ? Number(r.innkjopspris).toLocaleString('nb-NO') : '—'}</td>
-        <td style="color:var(--muted);font-size:0.78rem">${r.innkjopsdato || '—'}</td>
-        <td style="color:var(--muted);font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.kommentar || ''}</td>
-      </tr>`).join('');
+    if (!rows.length) {
+      tbody.innerHTML = '';
+      noR.style.display = 'block';
+    } else {
+      noR.style.display = 'none';
+      tbody.innerHTML = rows.map(r => `
+        <tr onclick="openItemModal(${r.id})">
+          <td data-label="Kategori"><span class="cat-badge" style="color:${catColor(r.kategori)};border-color:${catColor(r.kategori)}22;background:${catColor(r.kategori)}11">${r.kategori}</span></td>
+          <td data-label="Vare / Modell">${r.vare || '—'}</td>
+          <td data-label="Ant."><span class="qty-badge">${r.kvantitet}</span></td>
+          <td data-label="Lokasjon">${r.lokasjon || '—'}</td>
+          <td data-label="Status">${statusDot(r.status)}</td>
+          <td data-label="Serienr." style="color:var(--muted);font-size:0.78rem">${r.serienummer || '—'}</td>
+          <td data-label="Pris (NOK)" style="color:var(--muted);font-size:0.78rem">${r.innkjopspris ? Number(r.innkjopspris).toLocaleString('nb-NO') : '—'}</td>
+          <td data-label="Dato" style="color:var(--muted);font-size:0.78rem">${r.innkjopsdato || '—'}</td>
+          <td data-label="Kommentar" style="color:var(--muted);font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.kommentar || ''}</td>
+        </tr>`).join('');
+    }
+
+    // Stats
+    const all    = await API.getUtstyr();
+    const utlaan = await API.getUtlaan();
+    $('stat-total').textContent   = all.reduce((s, r) => s + (parseInt(r.kvantitet) || 0), 0);
+    $('stat-items').textContent   = all.length;
+    $('stat-utlaan').textContent  = utlaan.length;
+    $('stat-service').textContent = all.filter(r => r.status === 'Service').length;
+
+    populateFilters(all);
+  } finally {
+    hideLoading();
   }
-
-  // Stats
-  const all    = await API.getUtstyr();
-  const utlaan = await API.getUtlaan();
-  $('stat-total').textContent   = all.reduce((s, r) => s + (parseInt(r.kvantitet) || 0), 0);
-  $('stat-items').textContent   = all.length;
-  $('stat-utlaan').textContent  = utlaan.length;
-  $('stat-service').textContent = all.filter(r => r.status === 'Service').length;
-
-  populateFilters(all);
 }
 
 async function populateFilters(all) {
@@ -140,6 +163,16 @@ function sortBy(col) {
   document.querySelectorAll('thead th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
   const idx = ['kategori','vare','kvantitet','lokasjon','status','serienummer','innkjopspris','innkjopsdato'].indexOf(col);
   if (idx >= 0) document.querySelectorAll('thead th')[idx].classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+  render();
+}
+
+// Kolonneoverskriftene (der man klikker for å sortere) er skjult på mobil
+// (kortvisning), så mobil bruker en egen dropdown i stedet.
+function setMobileSort(col) {
+  sortCol = col; sortDir = 1;
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+  const idx = ['kategori','vare','kvantitet','lokasjon','status','serienummer','innkjopspris','innkjopsdato'].indexOf(col);
+  if (idx >= 0) document.querySelectorAll('thead th')[idx].classList.add('sort-asc');
   render();
 }
 
@@ -172,7 +205,7 @@ async function openItemModal(id) {
 
 async function saveItem() {
   const vare = $('f-vare').value.trim();
-  if (!vare) { alert('Vare/modell er påkrevd.'); return; }
+  if (!vare) { showToast('Vare/modell er påkrevd.', 'error'); return; }
 
   await API.saveUtstyr({
     id:           editId,
@@ -234,7 +267,7 @@ async function renderQR() {
 
 async function downloadQR() {
   const canvas = $('qr-canvas').querySelector('canvas');
-  if (!canvas) { alert('Generer QR-kode først.'); return; }
+  if (!canvas) { showToast('Generer QR-kode først.', 'error'); return; }
   const sel     = $('qr-enhet-select');
   const assetId = sel.options[sel.selectedIndex]?.dataset.asset;
   const r       = editId !== null ? await API.getUtstyrById(editId) : null;
@@ -275,7 +308,7 @@ async function renderItemEnheter() {
 }
 
 async function leggTilEnhet() {
-  if (editId === null) { alert('Lagre utstyret først.'); return; }
+  if (editId === null) { showToast('Lagre utstyret først.', 'error'); return; }
   const nr = await API.getNextEnhetNr(editId);
   await API.saveEnhet({
     utstyrId:    editId,
@@ -372,9 +405,9 @@ async function renderItemLogg() {
 }
 
 async function addLoggEntry() {
-  if (editId === null) { alert('Lagre utstyret først.'); return; }
+  if (editId === null) { showToast('Lagre utstyret først.', 'error'); return; }
   const desc = $('nl-desc').value.trim();
-  if (!desc) { alert('Beskrivelse er påkrevd.'); return; }
+  if (!desc) { showToast('Beskrivelse er påkrevd.', 'error'); return; }
 
   await API.saveLogg({
     utstyrId: editId,
@@ -391,6 +424,8 @@ async function addLoggEntry() {
 }
 
 async function renderLogg() {
+  showLoading();
+  try {
   const sorted = (await API.getLogg()).sort((a, b) => b.dato.localeCompare(a.dato));
   const el = $('logg-list');
   if (!sorted.length) {
@@ -421,6 +456,9 @@ async function renderLogg() {
       <button class="logg-del-btn" onclick="deleteLogg(${e.id})">×</button>
     </div>`;
   }).join('');
+  } finally {
+    hideLoading();
+  }
 }
 
 async function oppdaterLoggEnhetSelect(utstyrId) {
@@ -443,7 +481,7 @@ async function openLoggModal(utstyrId = null) {
 
 async function saveLogg() {
   const desc = $('lg-desc').value.trim();
-  if (!desc) { alert('Beskrivelse er påkrevd.'); return; }
+  if (!desc) { showToast('Beskrivelse er påkrevd.', 'error'); return; }
 
   await API.saveLogg({
     utstyrId: parseInt($('lg-utstyr').value),
@@ -471,6 +509,8 @@ async function deleteLogg(id) {
 // ════════════════════════════════════════════════════════════
 
 async function renderUtlaan() {
+  showLoading();
+  try {
   const el  = $('utlaan-grid');
   const all = await API.getUtlaan();
   if (!all.length) {
@@ -509,6 +549,9 @@ async function renderUtlaan() {
       </div>
     </div>`;
   }).join('');
+  } finally {
+    hideLoading();
+  }
 }
 
 async function openUtlaanModal(id) {
@@ -564,7 +607,7 @@ function oppdaterAntallFelt() {
 
 async function saveUtlaan() {
   const laantaker = $('ul-laantaker').value.trim();
-  if (!laantaker) { alert('Låntaker er påkrevd.'); return; }
+  if (!laantaker) { showToast('Låntaker er påkrevd.', 'error'); return; }
 
   const enhetId = $('ul-enhet').value ? parseInt($('ul-enhet').value) : null;
 

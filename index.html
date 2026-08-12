@@ -2,9 +2,21 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Petors AS — Utstyrsregister</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- PWA / iOS "Legg til på Hjem-skjerm" -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0f14">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Utstyrsregister">
+
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -16,9 +28,14 @@
     --cat-mikrofon: #38bdf8; --cat-di: #a3e635; --cat-stativ: #e879f9; --cat-default: #94a3b8;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace;
+    min-height: 100vh; min-height: 100dvh;
+    padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 
-  header { border-bottom: 1px solid var(--border); padding: 28px 40px 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+  header { border-bottom: 1px solid var(--border); padding: calc(28px + env(safe-area-inset-top)) 40px 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
   .logo-block svg.site-logo { height: 50px; width: auto; display: block; }
   .logo-block p { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 6px; }
   .header-stats { display: flex; gap: 32px; }
@@ -39,6 +56,7 @@
   input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus { border-color: var(--accent); }
   select { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.82rem; padding: 10px 14px; border-radius: 6px; outline: none; cursor: pointer; transition: border-color 0.15s; }
   select:focus { border-color: var(--accent); }
+  .mobile-sort-select { display: none; }
   textarea { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.85rem; padding: 10px 12px; border-radius: 6px; outline: none; transition: border-color 0.15s; resize: vertical; width: 100%; }
   textarea:focus { border-color: var(--accent); }
 
@@ -95,7 +113,7 @@
   .logg-tag-service { color: var(--service); border-color: var(--service)44; background: var(--service)11; }
   .logg-tag-rep { color: var(--accent2); border-color: var(--accent2)44; background: var(--accent2)11; }
   .logg-tag-notat { color: var(--muted); border-color: var(--border); }
-  .logg-del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px; }
+  .logg-del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 6px; border-radius: 6px; min-width: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; }
   .logg-del-btn:hover { color: var(--danger); background: var(--danger)11; }
 
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
@@ -104,7 +122,7 @@
   .modal-overlay.open .modal { transform: translateY(0); }
   .modal-header { padding: 24px 28px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
   .modal-header h2 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; }
-  .modal-close { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; line-height: 1; transition: color 0.15s; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; line-height: 1; transition: color 0.15s; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; margin: -10px -8px -10px 0; }
   .modal-close:hover { color: var(--text); }
   .modal-body { padding: 24px 28px; }
   .modal-footer { padding: 16px 28px 24px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); }
@@ -137,16 +155,65 @@
   .section-header { padding: 20px 40px 0; display: flex; justify-content: space-between; align-items: center; }
   .section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
 
+  #loading-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 2000; overflow: hidden; pointer-events: none; }
+  #loading-bar.active::before {
+    content: ''; display: block; height: 100%; width: 40%; background: var(--accent);
+    animation: loading-slide 1s ease-in-out infinite;
+  }
+  @keyframes loading-slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+
+  .toast-container {
+    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+    z-index: 3000; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none;
+  }
+  .toast {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 12px 18px; border-radius: 8px; font-size: 0.82rem; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    opacity: 0; transform: translateY(8px); transition: opacity 0.2s, transform 0.2s; max-width: 90vw;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.toast-error { border-color: var(--danger); color: var(--danger); }
+
   @media (max-width: 700px) {
-    header { flex-direction: column; align-items: flex-start; padding: 20px; }
+    header { flex-direction: column; align-items: flex-start; padding: calc(20px + env(safe-area-inset-top)) 20px 20px; }
     .header-stats { gap: 20px; }
     .toolbar, .nav-tabs { padding: 16px 20px; }
     .table-wrap, .logg-wrap, .utlaan-grid, .section-header { padding: 16px 20px; }
     .form-grid { grid-template-columns: 1fr; }
+    /* iOS Safari zoomer inn ved fokus på felt med font-size < 16px */
+    input[type="text"], input[type="number"], input[type="date"], select, textarea { font-size: 16px; }
+
+    /* Sortering skjer via egen dropdown når kolonneoverskriftene er skjult */
+    .mobile-sort-select { display: block; width: 100%; order: 10; }
+
+    /* Kortvisning av tabellen i stedet for horisontal scroll */
+    .table-wrap { overflow-x: visible; }
+    table, thead, tbody, tr, td { display: block; }
+    thead { display: none; }
+    tbody tr {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 4px 14px; margin-bottom: 12px;
+    }
+    td {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      text-align: right; white-space: normal !important; max-width: none !important;
+      overflow: visible !important; text-overflow: clip !important;
+    }
+    td:last-child { border-bottom: none; }
+    td::before {
+      content: attr(data-label);
+      font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.68rem;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+      text-align: left; flex-shrink: 0;
+    }
   }
 </style>
 </head>
 <body>
+
+<div id="loading-bar"></div>
+<div class="toast-container" id="toast-container"></div>
 
 <header>
   <div class="logo-block">
@@ -188,6 +255,16 @@
       <option value="Utlånt">Utlånt</option>
       <option value="Service">Service</option>
       <option value="Utgått">Utgått</option>
+    </select>
+    <select id="mobile-sort" class="mobile-sort-select" onchange="setMobileSort(this.value)">
+      <option value="kategori">Sorter: Kategori</option>
+      <option value="vare">Sorter: Vare / Modell</option>
+      <option value="kvantitet">Sorter: Antall</option>
+      <option value="lokasjon">Sorter: Lokasjon</option>
+      <option value="status">Sorter: Status</option>
+      <option value="serienummer">Sorter: Serienummer</option>
+      <option value="innkjopspris">Sorter: Pris</option>
+      <option value="innkjopsdato">Sorter: Dato</option>
     </select>
     <button class="btn btn-accent" onclick="openItemModal(null)">+ Legg til</button>
     <button class="btn btn-ghost" onclick="exportCSV()">Eksport CSV</button>
