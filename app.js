@@ -88,7 +88,8 @@ function toggleMobileNav() {
 
 document.addEventListener('click', (e) => {
   const nav = $('nav-tabs');
-  if (nav.classList.contains('open') && !nav.contains(e.target)) {
+  const toggle = $('nav-mobile-toggle');
+  if (nav.classList.contains('open') && !nav.contains(e.target) && !toggle.contains(e.target)) {
     nav.classList.remove('open');
   }
 });
