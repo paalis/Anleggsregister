@@ -37,7 +37,7 @@ const API = (() => {
   async function saveUtstyr(item) {
     const row = {
       kategori: item.kategori, merke: item.merke || null, vare: item.vare,
-      kommentar: item.kommentar, status: item.status,
+      kommentar: item.kommentar,
       innkjopspris: item.innkjopspris || null,
       innkjopsdato: item.innkjopsdato || null,
     };
@@ -55,16 +55,16 @@ const API = (() => {
     check(error, 'deleteUtstyr');
   }
 
-  async function setUtstyrStatus(id, status) {
-    const { error } = await sb.from('utstyr').update({ status }).eq('id', id);
-    check(error, 'setUtstyrStatus');
-  }
-
   // ── Enheter ──────────────────────────────────────────────────
 
   async function getEnheter(utstyrId) {
     const { data, error } = await sb.from('enheter').select('*').eq('utstyr_id', utstyrId).order('enhet_nr');
     check(error, 'getEnheter'); return data;
+  }
+
+  async function getAlleEnheter() {
+    const { data, error } = await sb.from('enheter').select('*');
+    check(error, 'getAlleEnheter'); return data;
   }
 
   async function getEnhetById(id) {
@@ -139,11 +139,10 @@ const API = (() => {
   async function saveUtlaan(entry) {
     const row = {
       utstyr_id: entry.utstyrId,
-      enhet_id:  entry.enhetId || null,
+      enhet_id:  entry.enhetId,
       laantaker: entry.laantaker,
       fra:       entry.fra,
       til:       entry.til || null,
-      antall:    entry.antall || 1,
       notat:     entry.notat || null,
     };
     if (entry.id != null) {
@@ -153,11 +152,7 @@ const API = (() => {
     } else {
       const { data, error } = await sb.from('utlaan').insert(row).select().single();
       check(error, 'saveUtlaan (insert)');
-      if (entry.enhetId) {
-        await setEnhetStatus(entry.enhetId, 'Utlånt');
-      } else {
-        await setUtstyrStatus(entry.utstyrId, 'Utlånt');
-      }
+      await setEnhetStatus(entry.enhetId, 'Utlånt');
       return { ...data, utstyrId: data.utstyr_id, enhetId: data.enhet_id };
     }
   }
@@ -165,11 +160,7 @@ const API = (() => {
   async function returnerUtlaan(id) {
     const u = await getUtlaanById(id);
     await sb.from('utlaan').delete().eq('id', id);
-    if (u.enhetId) {
-      await setEnhetStatus(u.enhetId, 'OK');
-    } else {
-      await setUtstyrStatus(u.utstyrId, 'OK');
-    }
+    await setEnhetStatus(u.enhetId, 'OK');
   }
 
   async function deleteUtlaan(id) {
@@ -247,14 +238,14 @@ const API = (() => {
   async function getProsjektUtstyr(prosjektId) {
     const { data, error } = await sb.from('prosjekt_utstyr').select('*').eq('prosjekt_id', prosjektId).order('id');
     check(error, 'getProsjektUtstyr');
-    return data.map(p => ({ ...p, prosjektId: p.prosjekt_id, utstyrId: p.utstyr_id }));
+    return data.map(p => ({ ...p, prosjektId: p.prosjekt_id, utstyrId: p.utstyr_id, enhetId: p.enhet_id }));
   }
 
   async function addProsjektUtstyr(entry) {
-    const row = { prosjekt_id: entry.prosjektId, utstyr_id: entry.utstyrId, antall: entry.antall || 1 };
+    const row = { prosjekt_id: entry.prosjektId, utstyr_id: entry.utstyrId, enhet_id: entry.enhetId };
     const { data, error } = await sb.from('prosjekt_utstyr').insert(row).select().single();
     check(error, 'addProsjektUtstyr');
-    return { ...data, prosjektId: data.prosjekt_id, utstyrId: data.utstyr_id };
+    return { ...data, prosjektId: data.prosjekt_id, utstyrId: data.utstyr_id, enhetId: data.enhet_id };
   }
 
   async function removeProsjektUtstyr(id) {
@@ -264,8 +255,8 @@ const API = (() => {
 
   return {
     init,
-    getUtstyr, getUtstyrById, saveUtstyr, deleteUtstyr, setUtstyrStatus,
-    getEnheter, getEnhetById, getNextEnhetNr, saveEnhet, deleteEnhet, setEnhetStatus,
+    getUtstyr, getUtstyrById, saveUtstyr, deleteUtstyr,
+    getEnheter, getAlleEnheter, getEnhetById, getNextEnhetNr, saveEnhet, deleteEnhet, setEnhetStatus,
     getUtlaan, getUtlaanById, saveUtlaan, returnerUtlaan, deleteUtlaan,
     getLogg, getLoggForUtstyr, saveLogg, deleteLogg,
     getProsjekter, getProsjektById, saveProsjekt, deleteProsjekt,

@@ -336,20 +336,11 @@
     </div>
     <select id="filter-kat"><option value="">Alle kategorier</option></select>
     <select id="filter-merke"><option value="">Alle merker</option></select>
-    <select id="filter-status">
-      <option value="">Alle statuser</option>
-      <option value="OK">OK</option>
-      <option value="Reservert">Reservert</option>
-      <option value="Utlånt">Utlånt</option>
-      <option value="Service">Service</option>
-      <option value="Utgått">Utgått</option>
-    </select>
     <select id="mobile-sort" class="mobile-sort-select" onchange="setMobileSort(this.value)">
       <option value="kategori">Sorter: Kategori</option>
       <option value="merke">Sorter: Merke</option>
       <option value="vare">Sorter: Modell</option>
       <option value="kvantitet">Sorter: Antall</option>
-      <option value="status">Sorter: Status</option>
       <option value="innkjopspris">Sorter: Pris</option>
       <option value="innkjopsdato">Sorter: Dato</option>
     </select>
@@ -363,7 +354,6 @@
         <th onclick="sortBy('merke')">Merke</th>
         <th onclick="sortBy('vare')">Modell</th>
         <th onclick="sortBy('kvantitet')">Ant.</th>
-        <th onclick="sortBy('status')">Status</th>
         <th onclick="sortBy('innkjopspris')">Pris (NOK)</th>
         <th onclick="sortBy('innkjopsdato')">Dato</th>
         <th>Kommentar</th>
@@ -419,8 +409,6 @@
         <div class="form-grid">
           <div class="form-group"><label>Kategori *</label>
             <select id="f-kategori"><option>Sub</option><option>Topper</option><option>Monitor</option><option>Lydmixer</option><option>Lysmixer</option><option>Stagerack</option><option>Mikrofon</option><option>DI</option><option>Stativ - gitar</option><option>Annet</option></select></div>
-          <div class="form-group"><label>Status *</label>
-            <select id="f-status"><option>OK</option><option>Reservert</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
           <div class="form-group form-full"><label>Merke</label><input type="text" id="f-merke" placeholder="f.eks. Shure"></div>
           <div class="form-group form-full"><label>Modellnavn *</label><input type="text" id="f-vare" placeholder="f.eks. SM58"></div>
           <div class="form-group"><label>Antall enheter</label><div style="padding:10px 0;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:var(--accent2)" id="f-kvantitet">—</div></div>
@@ -521,9 +509,9 @@
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin:14px 0 8px">Legg til utstyr</div>
         <div class="form-grid">
           <div class="form-group form-full"><label>Utstyr</label>
-            <select id="pu-utstyr"></select></div>
-          <div class="form-group"><label>Antall</label>
-            <input type="number" id="pu-antall" min="1" value="1"></div>
+            <select id="pu-utstyr" onchange="oppdaterProsjektEnhetSelect(this.value)"></select></div>
+          <div class="form-group form-full"><label>Enhet</label>
+            <select id="pu-enhet"></select></div>
         </div>
         <button class="btn btn-ghost" style="margin-top:8px" onclick="leggTilProsjektUtstyr()">+ Legg til</button>
       </div>
@@ -547,10 +535,8 @@
       <div class="form-grid">
         <div class="form-group form-full"><label>Utstyr *</label>
           <select id="ul-utstyr" onchange="oppdaterEnhetSelect(this.value)"></select></div>
-        <div class="form-group"><label>Spesifikk enhet (valgfritt)</label>
-          <select id="ul-enhet" onchange="oppdaterAntallFelt()"></select></div>
-        <div class="form-group"><label>Antall</label>
-          <input type="number" id="ul-antall" min="1" value="1"></div>
+        <div class="form-group form-full"><label>Enhet *</label>
+          <select id="ul-enhet"></select></div>
         <div class="form-group form-full"><label>Låntaker *</label><input type="text" id="ul-laantaker" placeholder="Navn / organisasjon"></div>
         <div class="form-group"><label>Utlånsdato *</label><input type="date" id="ul-fra"></div>
         <div class="form-group"><label>Forventet retur</label><input type="date" id="ul-til"></div>

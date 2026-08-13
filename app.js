@@ -117,7 +117,6 @@ async function getFiltered() {
   const q   = $('search').value.toLowerCase();
   const kat = $('filter-kat').value;
   const mer = $('filter-merke').value;
-  const st  = $('filter-status').value;
 
   const all = await API.getUtstyr();
   return all
@@ -126,8 +125,7 @@ async function getFiltered() {
         .some(v => (v || '').toLowerCase().includes(q));
       return match
         && (!kat || r.kategori === kat)
-        && (!mer || r.merke   === mer)
-        && (!st  || r.status   === st);
+        && (!mer || r.merke   === mer);
     })
     .sort((a, b) => {
       const av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
@@ -154,7 +152,6 @@ async function render() {
           <td data-label="Merke">${r.merke || '—'}</td>
           <td data-label="Modell">${r.vare || '—'}</td>
           <td data-label="Ant."><span class="qty-badge">${r.kvantitet}</span></td>
-          <td data-label="Status">${statusDot(r.status)}</td>
           <td data-label="Pris (NOK)" style="color:var(--muted);font-size:0.78rem">${r.innkjopspris ? Number(r.innkjopspris).toLocaleString('nb-NO') : '—'}</td>
           <td data-label="Dato" style="color:var(--muted);font-size:0.78rem">${r.innkjopsdato || '—'}</td>
           <td data-label="Kommentar" style="color:var(--muted);font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.kommentar || ''}</td>
@@ -162,12 +159,13 @@ async function render() {
     }
 
     // Stats
-    const all    = await API.getUtstyr();
-    const utlaan = await API.getUtlaan();
+    const all     = await API.getUtstyr();
+    const utlaan  = await API.getUtlaan();
+    const enheter = await API.getAlleEnheter();
     $('stat-total').textContent   = all.reduce((s, r) => s + (parseInt(r.kvantitet) || 0), 0);
     $('stat-items').textContent   = all.length;
     $('stat-utlaan').textContent  = utlaan.length;
-    $('stat-service').textContent = all.filter(r => r.status === 'Service').length;
+    $('stat-service').textContent = enheter.filter(e => e.status === 'Service').length;
 
     populateFilters(all);
   } finally {
@@ -186,7 +184,7 @@ async function populateFilters(all) {
   fk.value = ck; fm.value = cm;
 }
 
-const SORT_COLS = ['kategori','merke','vare','kvantitet','status','innkjopspris','innkjopsdato'];
+const SORT_COLS = ['kategori','merke','vare','kvantitet','innkjopspris','innkjopsdato'];
 
 function sortBy(col) {
   if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
@@ -227,7 +225,6 @@ async function openItemModal(id, tab = 'tab-info') {
   $('f-vare').value        = r?.vare         ?? '';
   $('f-kvantitet').textContent = r?.kvantitet ?? 0;
   $('f-kommentar').value   = r?.kommentar    ?? '';
-  $('f-status').value      = r?.status       ?? 'OK';
   $('f-pris').value        = r?.innkjopspris ?? '';
   $('f-dato').value        = r?.innkjopsdato ?? '';
 
@@ -248,7 +245,6 @@ async function saveItem() {
     merke:        $('f-merke').value.trim(),
     vare,
     kommentar:    $('f-kommentar').value.trim(),
-    status:       $('f-status').value,
     innkjopspris: $('f-pris').value,
     innkjopsdato: $('f-dato').value,
   });
@@ -562,11 +558,11 @@ async function renderUtlaan() {
 
   el.innerHTML = all.map(u => {
     const item  = utstyrMap[u.utstyrId];
-    const enhet = u.enhetId ? enhetMap[u.enhetId] : null;
+    const enhet = enhetMap[u.enhetId];
     const over  = isOverdue(u.til);
     const enhetBadge = enhet
       ? `<span class="enhet-badge">${enhet.asset_id || '#' + enhet.enhet_nr}${enhet.serienummer ? ' · ' + enhet.serienummer : ''}</span>`
-      : (u.antall > 1 ? `<span class="enhet-badge">×${u.antall}</span>` : '');
+      : '';
     return `<div class="utlaan-card">
       <div class="utlaan-card-header">
         <div class="utlaan-card-title">${item ? fullNavn(item) : 'Ukjent'}${enhetBadge ? ' ' + enhetBadge : ''}</div>
@@ -604,14 +600,12 @@ async function openUtlaanModal(id) {
     $('ul-laantaker').value = u.laantaker;
     $('ul-fra').value       = u.fra;
     $('ul-til').value       = u.til || '';
-    $('ul-antall').value    = u.antall || 1;
     $('ul-notat').value     = u.notat || '';
     await oppdaterEnhetSelect(u.utstyrId, u.enhetId);
   } else {
     $('ul-laantaker').value = '';
     $('ul-fra').value       = today();
     $('ul-til').value       = '';
-    $('ul-antall').value    = 1;
     $('ul-notat').value     = '';
     await oppdaterEnhetSelect(utstyr[0]?.id ?? null, null);
   }
@@ -619,25 +613,17 @@ async function openUtlaanModal(id) {
   $('utlaan-modal-overlay').classList.add('open');
 }
 
+// Kun ledige enheter (status OK) kan velges — bortsett fra enheten som
+// allerede er knyttet til utlånet man redigerer.
 async function oppdaterEnhetSelect(utstyrId, valgtEnhetId = null) {
   const sel = $('ul-enhet');
   if (!utstyrId) { sel.innerHTML = '<option value="">— ingen enheter —</option>'; return; }
-  const enheter = await API.getEnheter(utstyrId);
-  sel.innerHTML = '<option value="">— velg enhet (valgfritt) —</option>'
-    + enheter.map(e => `<option value="${e.id}">${e.asset_id || '#' + e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''} [${e.status}]</option>`).join('');
+  const enheter = (await API.getEnheter(utstyrId)).filter(e => e.status === 'OK' || e.id === valgtEnhetId);
+  sel.innerHTML = enheter.length
+    ? '<option value="">— velg enhet —</option>'
+      + enheter.map(e => `<option value="${e.id}">${e.asset_id || '#' + e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''}</option>`).join('')
+    : '<option value="">— ingen ledige enheter —</option>';
   if (valgtEnhetId) sel.value = valgtEnhetId;
-  oppdaterAntallFelt();
-}
-
-function oppdaterAntallFelt() {
-  const enhetId = $('ul-enhet').value;
-  const antallInput = $('ul-antall');
-  if (enhetId) {
-    antallInput.value    = 1;
-    antallInput.disabled = true;
-  } else {
-    antallInput.disabled = false;
-  }
 }
 
 async function saveUtlaan() {
@@ -645,6 +631,7 @@ async function saveUtlaan() {
   if (!laantaker) { showToast('Låntaker er påkrevd.', 'error'); return; }
 
   const enhetId = $('ul-enhet').value ? parseInt($('ul-enhet').value) : null;
+  if (!enhetId) { showToast('Velg en enhet.', 'error'); return; }
 
   await API.saveUtlaan({
     id:        editUId,
@@ -653,7 +640,6 @@ async function saveUtlaan() {
     laantaker,
     fra:       $('ul-fra').value || today(),
     til:       $('ul-til').value,
-    antall:    enhetId ? 1 : (parseInt($('ul-antall').value) || 1),
     notat:     $('ul-notat').value.trim(),
   });
 
@@ -683,17 +669,17 @@ async function deleteUtlaan() {
 // PROSJEKTER
 // ════════════════════════════════════════════════════════════
 
-// Frigir utstyr tilbake til "OK" hvis det ikke lenger er reservert
+// Frigir en enhet tilbake til "OK" hvis den ikke lenger er reservert
 // av noe planlagt eller pågående prosjekt.
-async function releaseUtstyrHvisUbrukt(utstyrId) {
-  const item = await API.getUtstyrById(utstyrId);
-  if (item.status !== 'Reservert') return;
+async function releaseEnhetHvisUbrukt(enhetId) {
+  const enhet = await API.getEnhetById(enhetId);
+  if (enhet.status !== 'Reservert') return;
   const aktiveProsjekter = (await API.getProsjekter()).filter(p => p.status === 'Planlagt' || p.status === 'Pågår');
   for (const p of aktiveProsjekter) {
     const linjer = await API.getProsjektUtstyr(p.id);
-    if (linjer.some(l => l.utstyrId === utstyrId)) return;
+    if (linjer.some(l => l.enhetId === enhetId)) return;
   }
-  await API.setUtstyrStatus(utstyrId, 'OK');
+  await API.setEnhetStatus(enhetId, 'OK');
 }
 
 async function renderProsjekter() {
@@ -708,7 +694,6 @@ async function renderProsjekter() {
 
     el.innerHTML = (await Promise.all(all.map(async p => {
       const linjer = await API.getProsjektUtstyr(p.id);
-      const antallTotalt = linjer.reduce((s, l) => s + (l.antall || 0), 0);
       const aktiv = p.status === 'Planlagt' || p.status === 'Pågår';
       const c = prosjektStatusColor(p.status);
       return `<div class="utlaan-card" style="cursor:pointer" onclick="openProsjektModal(${p.id})">
@@ -720,7 +705,7 @@ async function renderProsjekter() {
           ${p.sted ? `<div><strong>Sted:</strong> ${p.sted}</div>` : ''}
           <div><strong>Dato:</strong> ${p.fra}${p.til ? ' – ' + p.til : ''}</div>
           ${p.oppdragsgiver ? `<div><strong>Oppdragsgiver:</strong> ${p.oppdragsgiver}</div>` : ''}
-          <div><strong>Utstyr:</strong> ${linjer.length ? `${linjer.length} linje${linjer.length === 1 ? '' : 'r'} · ${antallTotalt} stk` : 'Ingen lagt til ennå'}</div>
+          <div><strong>Utstyr:</strong> ${linjer.length ? `${linjer.length} enhet${linjer.length === 1 ? '' : 'er'} reservert` : 'Ingen lagt til ennå'}</div>
           ${p.notat ? `<div><strong>Notat:</strong> ${p.notat}</div>` : ''}
         </div>
         <div class="utlaan-actions">
@@ -739,7 +724,7 @@ async function fullforProsjekt(id) {
   const p = await API.getProsjektById(id);
   await API.saveProsjekt({ ...p, id, status: 'Fullført' });
   const linjer = await API.getProsjektUtstyr(id);
-  for (const l of linjer) await releaseUtstyrHvisUbrukt(l.utstyrId);
+  for (const l of linjer) await releaseEnhetHvisUbrukt(l.enhetId);
   await renderProsjekter();
   await render();
 }
@@ -772,6 +757,7 @@ async function renderProsjektUtstyrTab() {
   const utstyr = await API.getUtstyr();
   const sel = $('pu-utstyr');
   sel.innerHTML = utstyr.map(r => `<option value="${r.id}">${fullNavn(r)} (${r.kategori})</option>`).join('');
+  await oppdaterProsjektEnhetSelect(sel.value);
 
   const el = $('prosjekt-utstyr-list');
   if (editProsjektId === null) {
@@ -785,33 +771,36 @@ async function renderProsjektUtstyrTab() {
     return;
   }
   const utstyrMap = Object.fromEntries(utstyr.map(r => [r.id, r]));
-  el.innerHTML = linjer.map(l => {
-    const item = utstyrMap[l.utstyrId];
+  el.innerHTML = (await Promise.all(linjer.map(async l => {
+    const item  = utstyrMap[l.utstyrId];
+    const enhet = await API.getEnhetById(l.enhetId);
+    const enhetLabel = enhet ? (enhet.asset_id || '#' + enhet.enhet_nr) : 'Ukjent enhet';
     return `<div class="inline-logg-item">
-      <span class="inline-logg-text">${item ? fullNavn(item) : 'Ukjent utstyr'} <span style="color:var(--muted)">× ${l.antall}</span></span>
+      <span class="inline-logg-text">${item ? fullNavn(item) : 'Ukjent utstyr'} <span style="color:var(--muted)">— ${enhetLabel}</span></span>
       <button class="logg-del-btn" onclick="fjernProsjektUtstyr(${l.id})">×</button>
     </div>`;
-  }).join('');
+  }))).join('');
+}
+
+// Kun ledige enheter (status OK) kan reserveres til et prosjekt.
+async function oppdaterProsjektEnhetSelect(utstyrId) {
+  const sel = $('pu-enhet');
+  if (!utstyrId) { sel.innerHTML = '<option value="">— ingen enheter —</option>'; return; }
+  const enheter = (await API.getEnheter(parseInt(utstyrId))).filter(e => e.status === 'OK');
+  sel.innerHTML = enheter.length
+    ? enheter.map(e => `<option value="${e.id}">${e.asset_id || '#' + e.enhet_nr}${e.serienummer ? ' · ' + e.serienummer : ''}</option>`).join('')
+    : '<option value="">— ingen ledige enheter —</option>';
 }
 
 async function leggTilProsjektUtstyr() {
   if (editProsjektId === null) { showToast('Lagre prosjektet først.', 'error'); return; }
   const utstyrId = parseInt($('pu-utstyr').value);
-  const antall   = parseInt($('pu-antall').value) || 1;
-  if (!utstyrId) return;
+  const enhetId  = $('pu-enhet').value ? parseInt($('pu-enhet').value) : null;
+  if (!utstyrId || !enhetId) { showToast('Velg en ledig enhet.', 'error'); return; }
 
-  const item = await API.getUtstyrById(utstyrId);
-  if (item.status === 'Utlånt') {
-    showToast(`OBS: ${fullNavn(item)} er allerede utlånt.`, 'error');
-  } else if (item.status === 'Reservert') {
-    showToast(`OBS: ${fullNavn(item)} er allerede reservert til et annet prosjekt.`, 'error');
-  } else if (item.status === 'OK') {
-    await API.setUtstyrStatus(utstyrId, 'Reservert');
-    await render();
-  }
-
-  await API.addProsjektUtstyr({ prosjektId: editProsjektId, utstyrId, antall });
-  $('pu-antall').value = 1;
+  await API.setEnhetStatus(enhetId, 'Reservert');
+  await API.addProsjektUtstyr({ prosjektId: editProsjektId, utstyrId, enhetId });
+  await render();
   await renderProsjektUtstyrTab();
 }
 
@@ -819,7 +808,7 @@ async function fjernProsjektUtstyr(id) {
   const linjer = await API.getProsjektUtstyr(editProsjektId);
   const linje = linjer.find(l => l.id === id);
   await API.removeProsjektUtstyr(id);
-  if (linje) await releaseUtstyrHvisUbrukt(linje.utstyrId);
+  if (linje) await releaseEnhetHvisUbrukt(linje.enhetId);
   await renderProsjektUtstyrTab();
   await render();
 }
@@ -849,7 +838,7 @@ async function saveProsjekt() {
   let frigjortNoe = false;
   if (forrigeStatus !== null && erAktiv(forrigeStatus) && !erAktiv(nyStatus)) {
     const linjer = await API.getProsjektUtstyr(editProsjektId);
-    for (const l of linjer) await releaseUtstyrHvisUbrukt(l.utstyrId);
+    for (const l of linjer) await releaseEnhetHvisUbrukt(l.enhetId);
     frigjortNoe = linjer.length > 0;
   }
 
@@ -862,7 +851,7 @@ async function deleteProsjekt() {
   if (!confirm('Slette dette prosjektet? Reservert utstyr blir frigitt.')) return;
   const linjer = await API.getProsjektUtstyr(editProsjektId);
   await API.deleteProsjekt(editProsjektId);
-  for (const l of linjer) await releaseUtstyrHvisUbrukt(l.utstyrId);
+  for (const l of linjer) await releaseEnhetHvisUbrukt(l.enhetId);
   closeModal('prosjekt-modal-overlay');
   await renderProsjekter();
   if (linjer.length) await render();
@@ -871,11 +860,11 @@ async function deleteProsjekt() {
 // ── CSV-eksport ───────────────────────────────────────────────
 async function exportCSV() {
   const rows    = await getFiltered();
-  const headers = ['Kategori','Merke','Modell','Kvantitet','Status','Innkjøpspris','Innkjøpsdato','Kommentar'];
+  const headers = ['Kategori','Merke','Modell','Kvantitet','Innkjøpspris','Innkjøpsdato','Kommentar'];
   const lines   = [
     headers.join(';'),
     ...rows.map(r =>
-      [r.kategori,r.merke,r.vare,r.kvantitet,r.status,r.innkjopspris,r.innkjopsdato,r.kommentar]
+      [r.kategori,r.merke,r.vare,r.kvantitet,r.innkjopspris,r.innkjopsdato,r.kommentar]
         .map(v => `"${(v || '').toString().replace(/"/g, '""')}"`)
         .join(';')
     ),
@@ -891,7 +880,7 @@ async function exportCSV() {
 async function initApp() {
   await API.init();
 
-  ['search','filter-kat','filter-merke','filter-status'].forEach(id =>
+  ['search','filter-kat','filter-merke'].forEach(id =>
     $(id).addEventListener('input', render)
   );
   $('nl-dato').value = today();

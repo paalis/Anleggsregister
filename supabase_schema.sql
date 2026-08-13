@@ -11,7 +11,6 @@ create table utstyr (
   vare          text not null,
   kvantitet     integer not null default 1,
   kommentar     text,
-  status        text not null default 'OK',
   innkjopspris  numeric,
   innkjopsdato  date,
   opprettet     timestamptz default now()
@@ -28,15 +27,14 @@ create table enheter (
   opprettet   timestamptz default now()
 );
 
--- UTLÅN
+-- UTLÅN (alltid knyttet til en spesifikk enhet)
 create table utlaan (
   id            bigint primary key generated always as identity,
   utstyr_id     bigint references utstyr(id) on delete cascade,
-  enhet_id      bigint references enheter(id) on delete set null,
+  enhet_id      bigint not null references enheter(id) on delete cascade,
   laantaker     text not null,
   fra           date not null,
   til           date,
-  antall        integer not null default 1,
   notat         text,
   opprettet     timestamptz default now()
 );
@@ -65,56 +63,56 @@ create table prosjekt (
   opprettet     timestamptz default now()
 );
 
--- Utstyr planlagt til et prosjekt (modellnivå + antall)
+-- Utstyr planlagt til et prosjekt (én rad per reservert enhet)
 create table prosjekt_utstyr (
   id          bigint primary key generated always as identity,
   prosjekt_id bigint references prosjekt(id) on delete cascade,
   utstyr_id   bigint references utstyr(id) on delete cascade,
-  antall      integer not null default 1,
+  enhet_id    bigint not null references enheter(id) on delete cascade,
   opprettet   timestamptz default now()
 );
 
 -- ============================================================
 -- Seed: importer eksisterende utstyr
 -- ============================================================
-insert into utstyr (kategori, vare, kvantitet, kommentar, status) values
-  ('Sub',            'Meyer 650',              2, 'På E-torget',  'OK'),
-  ('Topper',         'Meyer CQ2',              2, 'På E-torget',  'OK'),
-  ('Topper',         'Meyer UPA-1',            2, 'På E-torget',  'OK'),
-  ('Topper',         'RCF TT08-A II',          2, 'På E-torget',  'OK'),
-  ('Monitor',        'Meyer MJF-212A',         2, 'På E-torget',  'OK'),
-  ('Monitor',        'Yamaha DZR-12',          2, 'På E-torget',  'OK'),
-  ('Monitor',        'Yamaha DZR-12-D',        1, 'På E-torget',  'OK'),
-  ('Lydmixer',       'Yamaha MG16x',           1, 'På E-torget',  'OK'),
-  ('Lydmixer',       'Yamaha QL-5',            1, 'På E-torget',  'OK'),
-  ('Lysmixer',       'MA Lighting GrandMA2',   1, 'På E-torget',  'OK'),
-  ('Stagerack',      'Yamaha Rio3224-D2',      1, 'På E-Torget',  'OK'),
-  ('Mikrofon',       'Shure Beta58A',          5, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure SM58',             4, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure SM57',             7, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Beta87A',          1, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Beta57A',          1, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'ADK SC-1',               2, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Audix D6',               1, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Sennheiser e906',         1, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Sennheiser e903',         1, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Beta91A',           1, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Beta98A',           5, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Sennheiser e835',         2, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Beta52A',           1, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'AKG 112',                1, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Beyerdynamic Opus 87',   2, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'DPA 4099 Core LOUD SPL', 1, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'DPA 4099',               2, 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Super 55',          1, 'Samlekassen',  'OK'),
-  ('DI',             'Countryman Type 10 Stereo', 1, 'Samlekassen', 'OK'),
-  ('DI',             'Countryman Type 10',     4, 'Samlekassen',  'OK'),
-  ('DI',             'LA2 Audio DI2',          1, 'Samlekassen',  'OK'),
-  ('Stativ - gitar', 'K&M Elgitar',            2, 'Samlekassen',  'OK'),
-  ('Stativ - gitar', 'K&M Akkustisk',          1, 'Samlekassen',  'OK'),
-  ('Stativ - gitar', 'Proel El/akk',           1, 'Samlekassen',  'OK'),
-  ('Stativ - gitar', 'Rockline Elgitar',       1, 'Samlekassen',  'OK'),
-  ('Stativ - gitar', 'Supreme Akk',            1, 'Samlekassen',  'OK');
+insert into utstyr (kategori, vare, kvantitet, kommentar) values
+  ('Sub',            'Meyer 650',              2, 'På E-torget'),
+  ('Topper',         'Meyer CQ2',              2, 'På E-torget'),
+  ('Topper',         'Meyer UPA-1',            2, 'På E-torget'),
+  ('Topper',         'RCF TT08-A II',          2, 'På E-torget'),
+  ('Monitor',        'Meyer MJF-212A',         2, 'På E-torget'),
+  ('Monitor',        'Yamaha DZR-12',          2, 'På E-torget'),
+  ('Monitor',        'Yamaha DZR-12-D',        1, 'På E-torget'),
+  ('Lydmixer',       'Yamaha MG16x',           1, 'På E-torget'),
+  ('Lydmixer',       'Yamaha QL-5',            1, 'På E-torget'),
+  ('Lysmixer',       'MA Lighting GrandMA2',   1, 'På E-torget'),
+  ('Stagerack',      'Yamaha Rio3224-D2',      1, 'På E-Torget'),
+  ('Mikrofon',       'Shure Beta58A',          5, 'Samlekassen'),
+  ('Mikrofon',       'Shure SM58',             4, 'Samlekassen'),
+  ('Mikrofon',       'Shure SM57',             7, 'Samlekassen'),
+  ('Mikrofon',       'Shure Beta87A',          1, 'Samlekassen'),
+  ('Mikrofon',       'Shure Beta57A',          1, 'Samlekassen'),
+  ('Mikrofon',       'ADK SC-1',               2, 'Samlekassen'),
+  ('Mikrofon',       'Audix D6',               1, 'Samlekassen'),
+  ('Mikrofon',       'Sennheiser e906',         1, 'Samlekassen'),
+  ('Mikrofon',       'Sennheiser e903',         1, 'Samlekassen'),
+  ('Mikrofon',       'Shure Beta91A',           1, 'Samlekassen'),
+  ('Mikrofon',       'Shure Beta98A',           5, 'Samlekassen'),
+  ('Mikrofon',       'Sennheiser e835',         2, 'Samlekassen'),
+  ('Mikrofon',       'Shure Beta52A',           1, 'Samlekassen'),
+  ('Mikrofon',       'AKG 112',                1, 'Samlekassen'),
+  ('Mikrofon',       'Beyerdynamic Opus 87',   2, 'Samlekassen'),
+  ('Mikrofon',       'DPA 4099 Core LOUD SPL', 1, 'Samlekassen'),
+  ('Mikrofon',       'DPA 4099',               2, 'Samlekassen'),
+  ('Mikrofon',       'Shure Super 55',          1, 'Samlekassen'),
+  ('DI',             'Countryman Type 10 Stereo', 1, 'Samlekassen'),
+  ('DI',             'Countryman Type 10',     4, 'Samlekassen'),
+  ('DI',             'LA2 Audio DI2',          1, 'Samlekassen'),
+  ('Stativ - gitar', 'K&M Elgitar',            2, 'Samlekassen'),
+  ('Stativ - gitar', 'K&M Akkustisk',          1, 'Samlekassen'),
+  ('Stativ - gitar', 'Proel El/akk',           1, 'Samlekassen'),
+  ('Stativ - gitar', 'Rockline Elgitar',       1, 'Samlekassen'),
+  ('Stativ - gitar', 'Supreme Akk',            1, 'Samlekassen');
 
 -- ============================================================
 -- Row Level Security (RLS)
@@ -145,4 +143,16 @@ create policy "Alle kan lese og skrive prosjekt_utstyr" on prosjekt_utstyr for a
 --   select u.id, 1, u.status, nullif(u.lokasjon, '')
 --   from utstyr u where not exists (select 1 from enheter e where e.utstyr_id = u.id);
 -- alter table utstyr drop column if exists lokasjon; -- lokasjon flyttet til enheter
+--
+-- Status finnes nå kun på enhetsnivå: utlån og prosjekt-reservasjon må
+-- knyttes til en spesifikk (ledig) enhet, ikke lenger vare + antall.
+-- Hadde man data fra før måtte man selv bestemme hvilke fysiske enheter
+-- som tilsvarte eksisterende "vare + antall"-reservasjoner/utlån.
+-- alter table prosjekt_utstyr add column enhet_id bigint references enheter(id) on delete cascade;
+-- -- ... migrer prosjekt_utstyr.enhet_id manuelt her ...
+-- alter table prosjekt_utstyr alter column enhet_id set not null;
+-- alter table prosjekt_utstyr drop column antall;
+-- alter table utlaan alter column enhet_id set not null;
+-- alter table utlaan drop column antall;
+-- alter table utstyr drop column if exists status;
 -- ============================================================
