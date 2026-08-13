@@ -75,10 +75,23 @@ function switchView(name, btn) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   $('view-' + name).classList.add('active');
   btn.classList.add('active');
+  $('nav-current-label').textContent = btn.textContent;
+  $('nav-tabs').classList.remove('open');
   if (name === 'prosjekt') renderProsjekter();
   if (name === 'utlaan')   renderUtlaan();
   if (name === 'logg')     renderLogg();
 }
+
+function toggleMobileNav() {
+  $('nav-tabs').classList.toggle('open');
+}
+
+document.addEventListener('click', (e) => {
+  const nav = $('nav-tabs');
+  if (nav.classList.contains('open') && !nav.contains(e.target)) {
+    nav.classList.remove('open');
+  }
+});
 
 function switchModalTab(tabId, btn) {
   document.querySelectorAll('.modal-tab-content').forEach(t => t.classList.remove('active'));
