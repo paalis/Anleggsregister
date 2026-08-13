@@ -117,18 +117,16 @@ async function getFiltered() {
   const q   = $('search').value.toLowerCase();
   const kat = $('filter-kat').value;
   const mer = $('filter-merke').value;
-  const lok = $('filter-lok').value;
   const st  = $('filter-status').value;
 
   const all = await API.getUtstyr();
   return all
     .filter(r => {
-      const match = !q || [r.vare, r.merke, r.kategori, r.lokasjon, r.kommentar]
+      const match = !q || [r.vare, r.merke, r.kategori, r.kommentar]
         .some(v => (v || '').toLowerCase().includes(q));
       return match
         && (!kat || r.kategori === kat)
         && (!mer || r.merke   === mer)
-        && (!lok || r.lokasjon === lok)
         && (!st  || r.status   === st);
     })
     .sort((a, b) => {
@@ -151,12 +149,11 @@ async function render() {
     } else {
       noR.style.display = 'none';
       tbody.innerHTML = rows.map(r => `
-        <tr onclick="openItemModal(${r.id})">
+        <tr onclick="openItemModal(${r.id}, 'tab-enheter')">
           <td data-label="Kategori"><span class="cat-badge" style="color:${catColor(r.kategori)};border-color:${catColor(r.kategori)}22;background:${catColor(r.kategori)}11">${r.kategori}</span></td>
           <td data-label="Merke">${r.merke || '—'}</td>
           <td data-label="Modell">${r.vare || '—'}</td>
           <td data-label="Ant."><span class="qty-badge">${r.kvantitet}</span></td>
-          <td data-label="Lokasjon">${r.lokasjon || '—'}</td>
           <td data-label="Status">${statusDot(r.status)}</td>
           <td data-label="Pris (NOK)" style="color:var(--muted);font-size:0.78rem">${r.innkjopspris ? Number(r.innkjopspris).toLocaleString('nb-NO') : '—'}</td>
           <td data-label="Dato" style="color:var(--muted);font-size:0.78rem">${r.innkjopsdato || '—'}</td>
@@ -182,16 +179,14 @@ async function populateFilters(all) {
   if (!all) all = await API.getUtstyr();
   const kats   = [...new Set(all.map(r => r.kategori).filter(Boolean))].sort();
   const merker = [...new Set(all.map(r => r.merke).filter(Boolean))].sort();
-  const loks   = [...new Set(all.map(r => r.lokasjon).filter(Boolean))].sort();
-  const fk = $('filter-kat'), fm = $('filter-merke'), fl = $('filter-lok');
-  const ck = fk.value, cm = fm.value, cl = fl.value;
+  const fk = $('filter-kat'), fm = $('filter-merke');
+  const ck = fk.value, cm = fm.value;
   fk.innerHTML = '<option value="">Alle kategorier</option>' + kats.map(k => `<option value="${k}">${k}</option>`).join('');
   fm.innerHTML = '<option value="">Alle merker</option>' + merker.map(m => `<option value="${m}">${m}</option>`).join('');
-  fl.innerHTML = '<option value="">Alle lokasjoner</option>' + loks.map(l => `<option value="${l}">${l}</option>`).join('');
-  fk.value = ck; fm.value = cm; fl.value = cl;
+  fk.value = ck; fm.value = cm;
 }
 
-const SORT_COLS = ['kategori','merke','vare','kvantitet','lokasjon','status','innkjopspris','innkjopsdato'];
+const SORT_COLS = ['kategori','merke','vare','kvantitet','status','innkjopspris','innkjopsdato'];
 
 function sortBy(col) {
   if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
@@ -212,14 +207,16 @@ function setMobileSort(col) {
 }
 
 // ── Item modal ────────────────────────────────────────────────
-async function openItemModal(id) {
+// tab: hvilken fane som skal vises først (default Info). Klikk på en
+// rad i utstyrslisten hopper rett til Enheter, siden lokasjon og
+// serienummer nå bare finnes der.
+async function openItemModal(id, tab = 'tab-info') {
   editId = id;
 
-  // Reset til info-tab
   document.querySelectorAll('.modal-tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
-  $('tab-info').classList.add('active');
-  document.querySelector('.modal-tab').classList.add('active');
+  $(tab).classList.add('active');
+  $('item-modal-overlay').querySelector(`[data-tab="${tab}"]`).classList.add('active');
 
   $('item-modal-title').textContent = id === null ? 'Legg til utstyr' : 'Rediger utstyr';
   $('btn-item-delete').style.display = id === null ? 'none' : 'inline-block';
@@ -229,11 +226,14 @@ async function openItemModal(id) {
   $('f-merke').value       = r?.merke        ?? '';
   $('f-vare').value        = r?.vare         ?? '';
   $('f-kvantitet').textContent = r?.kvantitet ?? 0;
-  $('f-lokasjon').value    = r?.lokasjon     ?? '';
   $('f-kommentar').value   = r?.kommentar    ?? '';
   $('f-status').value      = r?.status       ?? 'OK';
   $('f-pris').value        = r?.innkjopspris ?? '';
   $('f-dato').value        = r?.innkjopsdato ?? '';
+
+  if (tab === 'tab-enheter') await renderItemEnheter();
+  if (tab === 'tab-logg')    await renderItemLogg();
+  if (tab === 'tab-qr')      await renderQR();
 
   $('item-modal-overlay').classList.add('open');
 }
@@ -247,7 +247,6 @@ async function saveItem() {
     kategori:     $('f-kategori').value,
     merke:        $('f-merke').value.trim(),
     vare,
-    lokasjon:     $('f-lokasjon').value.trim(),
     kommentar:    $('f-kommentar').value.trim(),
     status:       $('f-status').value,
     innkjopspris: $('f-pris').value,
@@ -872,11 +871,11 @@ async function deleteProsjekt() {
 // ── CSV-eksport ───────────────────────────────────────────────
 async function exportCSV() {
   const rows    = await getFiltered();
-  const headers = ['Kategori','Merke','Modell','Kvantitet','Lokasjon','Status','Innkjøpspris','Innkjøpsdato','Kommentar'];
+  const headers = ['Kategori','Merke','Modell','Kvantitet','Status','Innkjøpspris','Innkjøpsdato','Kommentar'];
   const lines   = [
     headers.join(';'),
     ...rows.map(r =>
-      [r.kategori,r.merke,r.vare,r.kvantitet,r.lokasjon,r.status,r.innkjopspris,r.innkjopsdato,r.kommentar]
+      [r.kategori,r.merke,r.vare,r.kvantitet,r.status,r.innkjopspris,r.innkjopsdato,r.kommentar]
         .map(v => `"${(v || '').toString().replace(/"/g, '""')}"`)
         .join(';')
     ),
@@ -892,7 +891,7 @@ async function exportCSV() {
 async function initApp() {
   await API.init();
 
-  ['search','filter-kat','filter-merke','filter-lok','filter-status'].forEach(id =>
+  ['search','filter-kat','filter-merke','filter-status'].forEach(id =>
     $(id).addEventListener('input', render)
   );
   $('nl-dato').value = today();

@@ -10,7 +10,6 @@ create table utstyr (
   merke         text,
   vare          text not null,
   kvantitet     integer not null default 1,
-  lokasjon      text,
   kommentar     text,
   status        text not null default 'OK',
   innkjopspris  numeric,
@@ -78,44 +77,44 @@ create table prosjekt_utstyr (
 -- ============================================================
 -- Seed: importer eksisterende utstyr
 -- ============================================================
-insert into utstyr (kategori, vare, kvantitet, lokasjon, kommentar, status) values
-  ('Sub',            'Meyer 650',              2, 'Selbu', 'På E-torget',  'OK'),
-  ('Topper',         'Meyer CQ2',              2, 'Selbu', 'På E-torget',  'OK'),
-  ('Topper',         'Meyer UPA-1',            2, 'Selbu', 'På E-torget',  'OK'),
-  ('Topper',         'RCF TT08-A II',          2, 'Selbu', 'På E-torget',  'OK'),
-  ('Monitor',        'Meyer MJF-212A',         2, 'Selbu', 'På E-torget',  'OK'),
-  ('Monitor',        'Yamaha DZR-12',          2, 'Selbu', 'På E-torget',  'OK'),
-  ('Monitor',        'Yamaha DZR-12-D',        1, 'Selbu', 'På E-torget',  'OK'),
-  ('Lydmixer',       'Yamaha MG16x',           1, 'Selbu', 'På E-torget',  'OK'),
-  ('Lydmixer',       'Yamaha QL-5',            1, 'Selbu', 'På E-torget',  'OK'),
-  ('Lysmixer',       'MA Lighting GrandMA2',   1, 'Selbu', 'På E-torget',  'OK'),
-  ('Stagerack',      'Yamaha Rio3224-D2',      1, 'Selbu', 'På E-Torget',  'OK'),
-  ('Mikrofon',       'Shure Beta58A',          5, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure SM58',             4, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure SM57',             7, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Beta87A',          1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Beta57A',          1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'ADK SC-1',               2, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Audix D6',               1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Sennheiser e906',         1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Sennheiser e903',         1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Beta91A',           1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Beta98A',           5, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Sennheiser e835',         2, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Beta52A',           1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'AKG 112',                1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Beyerdynamic Opus 87',   2, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'DPA 4099 Core LOUD SPL', 1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'DPA 4099',               2, 'Selbu', 'Samlekassen',  'OK'),
-  ('Mikrofon',       'Shure Super 55',          1, 'Selbu', 'Samlekassen',  'OK'),
-  ('DI',             'Countryman Type 10 Stereo', 1, 'Selbu', 'Samlekassen', 'OK'),
-  ('DI',             'Countryman Type 10',     4, 'Selbu', 'Samlekassen',  'OK'),
-  ('DI',             'LA2 Audio DI2',          1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Stativ - gitar', 'K&M Elgitar',            2, 'Selbu', 'Samlekassen',  'OK'),
-  ('Stativ - gitar', 'K&M Akkustisk',          1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Stativ - gitar', 'Proel El/akk',           1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Stativ - gitar', 'Rockline Elgitar',       1, 'Selbu', 'Samlekassen',  'OK'),
-  ('Stativ - gitar', 'Supreme Akk',            1, 'Selbu', 'Samlekassen',  'OK');
+insert into utstyr (kategori, vare, kvantitet, kommentar, status) values
+  ('Sub',            'Meyer 650',              2, 'På E-torget',  'OK'),
+  ('Topper',         'Meyer CQ2',              2, 'På E-torget',  'OK'),
+  ('Topper',         'Meyer UPA-1',            2, 'På E-torget',  'OK'),
+  ('Topper',         'RCF TT08-A II',          2, 'På E-torget',  'OK'),
+  ('Monitor',        'Meyer MJF-212A',         2, 'På E-torget',  'OK'),
+  ('Monitor',        'Yamaha DZR-12',          2, 'På E-torget',  'OK'),
+  ('Monitor',        'Yamaha DZR-12-D',        1, 'På E-torget',  'OK'),
+  ('Lydmixer',       'Yamaha MG16x',           1, 'På E-torget',  'OK'),
+  ('Lydmixer',       'Yamaha QL-5',            1, 'På E-torget',  'OK'),
+  ('Lysmixer',       'MA Lighting GrandMA2',   1, 'På E-torget',  'OK'),
+  ('Stagerack',      'Yamaha Rio3224-D2',      1, 'På E-Torget',  'OK'),
+  ('Mikrofon',       'Shure Beta58A',          5, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Shure SM58',             4, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Shure SM57',             7, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Shure Beta87A',          1, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Shure Beta57A',          1, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'ADK SC-1',               2, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Audix D6',               1, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Sennheiser e906',         1, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Sennheiser e903',         1, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Shure Beta91A',           1, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Shure Beta98A',           5, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Sennheiser e835',         2, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Shure Beta52A',           1, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'AKG 112',                1, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Beyerdynamic Opus 87',   2, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'DPA 4099 Core LOUD SPL', 1, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'DPA 4099',               2, 'Samlekassen',  'OK'),
+  ('Mikrofon',       'Shure Super 55',          1, 'Samlekassen',  'OK'),
+  ('DI',             'Countryman Type 10 Stereo', 1, 'Samlekassen', 'OK'),
+  ('DI',             'Countryman Type 10',     4, 'Samlekassen',  'OK'),
+  ('DI',             'LA2 Audio DI2',          1, 'Samlekassen',  'OK'),
+  ('Stativ - gitar', 'K&M Elgitar',            2, 'Samlekassen',  'OK'),
+  ('Stativ - gitar', 'K&M Akkustisk',          1, 'Samlekassen',  'OK'),
+  ('Stativ - gitar', 'Proel El/akk',           1, 'Samlekassen',  'OK'),
+  ('Stativ - gitar', 'Rockline Elgitar',       1, 'Samlekassen',  'OK'),
+  ('Stativ - gitar', 'Supreme Akk',            1, 'Samlekassen',  'OK');
 
 -- ============================================================
 -- Row Level Security (RLS)
@@ -142,4 +141,8 @@ create policy "Alle kan lese og skrive prosjekt_utstyr" on prosjekt_utstyr for a
 -- alter table utlaan add column if not exists enhet_id bigint references enheter(id) on delete set null;
 -- alter table utstyr add column if not exists merke    text;
 -- alter table utstyr drop column if exists serienummer; -- serienummer flyttet til enheter
+-- insert into enheter (utstyr_id, enhet_nr, status, lokasjon)
+--   select u.id, 1, u.status, nullif(u.lokasjon, '')
+--   from utstyr u where not exists (select 1 from enheter e where e.utstyr_id = u.id);
+-- alter table utstyr drop column if exists lokasjon; -- lokasjon flyttet til enheter
 -- ============================================================

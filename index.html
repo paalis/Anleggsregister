@@ -332,11 +332,10 @@
   <div class="toolbar">
     <div class="search-wrap">
       <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" color="#fff"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" id="search" placeholder="Søk etter vare, kategori, lokasjon...">
+      <input type="text" id="search" placeholder="Søk etter vare, kategori, merke...">
     </div>
     <select id="filter-kat"><option value="">Alle kategorier</option></select>
     <select id="filter-merke"><option value="">Alle merker</option></select>
-    <select id="filter-lok"><option value="">Alle lokasjoner</option></select>
     <select id="filter-status">
       <option value="">Alle statuser</option>
       <option value="OK">OK</option>
@@ -350,7 +349,6 @@
       <option value="merke">Sorter: Merke</option>
       <option value="vare">Sorter: Modell</option>
       <option value="kvantitet">Sorter: Antall</option>
-      <option value="lokasjon">Sorter: Lokasjon</option>
       <option value="status">Sorter: Status</option>
       <option value="innkjopspris">Sorter: Pris</option>
       <option value="innkjopsdato">Sorter: Dato</option>
@@ -365,7 +363,6 @@
         <th onclick="sortBy('merke')">Merke</th>
         <th onclick="sortBy('vare')">Modell</th>
         <th onclick="sortBy('kvantitet')">Ant.</th>
-        <th onclick="sortBy('lokasjon')">Lokasjon</th>
         <th onclick="sortBy('status')">Status</th>
         <th onclick="sortBy('innkjopspris')">Pris (NOK)</th>
         <th onclick="sortBy('innkjopsdato')">Dato</th>
@@ -413,10 +410,10 @@
     </div>
     <div class="modal-body">
       <div class="modal-tabs">
-        <button class="modal-tab active" onclick="switchModalTab('tab-info',this)">Info</button>
-        <button class="modal-tab" onclick="switchModalTab('tab-enheter',this)">Enheter</button>
-        <button class="modal-tab" onclick="switchModalTab('tab-logg',this)">Logg</button>
-        <button class="modal-tab" onclick="switchModalTab('tab-qr',this)">QR-kode</button>
+        <button class="modal-tab active" data-tab="tab-info" onclick="switchModalTab('tab-info',this)">Info</button>
+        <button class="modal-tab" data-tab="tab-enheter" onclick="switchModalTab('tab-enheter',this)">Enheter</button>
+        <button class="modal-tab" data-tab="tab-logg" onclick="switchModalTab('tab-logg',this)">Logg</button>
+        <button class="modal-tab" data-tab="tab-qr" onclick="switchModalTab('tab-qr',this)">QR-kode</button>
       </div>
       <div class="modal-tab-content active" id="tab-info">
         <div class="form-grid">
@@ -427,7 +424,6 @@
           <div class="form-group form-full"><label>Merke</label><input type="text" id="f-merke" placeholder="f.eks. Shure"></div>
           <div class="form-group form-full"><label>Modellnavn *</label><input type="text" id="f-vare" placeholder="f.eks. SM58"></div>
           <div class="form-group"><label>Antall enheter</label><div style="padding:10px 0;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:var(--accent2)" id="f-kvantitet">—</div></div>
-          <div class="form-group"><label>Lokasjon</label><input type="text" id="f-lokasjon" placeholder="f.eks. Selbu"></div>
           <div class="form-group"><label>Innkjøpspris (NOK)</label><input type="number" id="f-pris" min="0" placeholder="0"></div>
           <div class="form-group"><label>Innkjøpsdato</label><input type="date" id="f-dato"></div>
           <div class="form-group form-full"><label>Kommentar</label><textarea id="f-kommentar" rows="2" placeholder="Ekstra informasjon..."></textarea></div>
