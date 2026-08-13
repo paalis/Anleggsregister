@@ -177,14 +177,35 @@
   @media (max-width: 700px) {
     header { flex-direction: column; align-items: flex-start; padding: calc(20px + env(safe-area-inset-top)) 20px 20px; }
     .header-stats { gap: 20px; }
-    .toolbar, .nav-tabs { padding: 16px 20px; }
+    .nav-tabs { padding: 16px 20px; }
     .table-wrap, .logg-wrap, .utlaan-grid, .section-header { padding: 16px 20px; }
     .form-grid { grid-template-columns: 1fr; }
     /* iOS Safari zoomer inn ved fokus på felt med font-size < 16px */
     input[type="text"], input[type="number"], input[type="date"], select, textarea { font-size: 16px; }
 
+    /* Filterrad tilpasset iPhone: søk i full bredde øverst, filtre/knapper parvis i et rutenett */
+    .toolbar {
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .search-wrap { grid-column: 1 / -1; }
+    .toolbar select, .toolbar .btn {
+      width: 100%;
+      min-height: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .toolbar select {
+      -webkit-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7290' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 32px;
+    }
+
     /* Sortering skjer via egen dropdown når kolonneoverskriftene er skjult */
-    .mobile-sort-select { display: block; width: 100%; order: 10; }
+    .mobile-sort-select { display: block; }
 
     /* Kortvisning av tabellen i stedet for horisontal scroll */
     .table-wrap { overflow-x: visible; }
