@@ -205,7 +205,7 @@
     }
 
     /* Sortering skjer via egen dropdown når kolonneoverskriftene er skjult */
-    .mobile-sort-select { display: block; }
+    .mobile-sort-select { display: block; grid-column: 1 / -1; }
 
     /* Kortvisning av tabellen i stedet for horisontal scroll */
     .table-wrap { overflow-x: visible; }
@@ -269,6 +269,7 @@
       <input type="text" id="search" placeholder="Søk etter vare, kategori, lokasjon...">
     </div>
     <select id="filter-kat"><option value="">Alle kategorier</option></select>
+    <select id="filter-merke"><option value="">Alle merker</option></select>
     <select id="filter-lok"><option value="">Alle lokasjoner</option></select>
     <select id="filter-status">
       <option value="">Alle statuser</option>
@@ -279,7 +280,8 @@
     </select>
     <select id="mobile-sort" class="mobile-sort-select" onchange="setMobileSort(this.value)">
       <option value="kategori">Sorter: Kategori</option>
-      <option value="vare">Sorter: Vare / Modell</option>
+      <option value="merke">Sorter: Merke</option>
+      <option value="vare">Sorter: Modell</option>
       <option value="kvantitet">Sorter: Antall</option>
       <option value="lokasjon">Sorter: Lokasjon</option>
       <option value="status">Sorter: Status</option>
@@ -294,7 +296,8 @@
     <table>
       <thead><tr>
         <th onclick="sortBy('kategori')">Kategori</th>
-        <th onclick="sortBy('vare')">Vare / Modell</th>
+        <th onclick="sortBy('merke')">Merke</th>
+        <th onclick="sortBy('vare')">Modell</th>
         <th onclick="sortBy('kvantitet')">Ant.</th>
         <th onclick="sortBy('lokasjon')">Lokasjon</th>
         <th onclick="sortBy('status')">Status</th>

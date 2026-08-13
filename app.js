@@ -89,6 +89,7 @@ function closeModalIfBg(e, id) { if (e.target.id === id) closeModal(id); }
 async function getFiltered() {
   const q   = $('search').value.toLowerCase();
   const kat = $('filter-kat').value;
+  const mer = $('filter-merke').value;
   const lok = $('filter-lok').value;
   const st  = $('filter-status').value;
 
@@ -99,12 +100,12 @@ async function getFiltered() {
         .some(v => (v || '').toLowerCase().includes(q));
       return match
         && (!kat || r.kategori === kat)
+        && (!mer || r.merke   === mer)
         && (!lok || r.lokasjon === lok)
         && (!st  || r.status   === st);
     })
     .sort((a, b) => {
-      const av = sortCol === 'vare' ? fullNavn(a) : (a[sortCol] ?? '');
-      const bv = sortCol === 'vare' ? fullNavn(b) : (b[sortCol] ?? '');
+      const av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
       return (av < bv ? -1 : av > bv ? 1 : 0) * sortDir;
     });
 }
@@ -125,7 +126,8 @@ async function render() {
       tbody.innerHTML = rows.map(r => `
         <tr onclick="openItemModal(${r.id})">
           <td data-label="Kategori"><span class="cat-badge" style="color:${catColor(r.kategori)};border-color:${catColor(r.kategori)}22;background:${catColor(r.kategori)}11">${r.kategori}</span></td>
-          <td data-label="Vare / Modell">${fullNavn(r) || '—'}</td>
+          <td data-label="Merke">${r.merke || '—'}</td>
+          <td data-label="Modell">${r.vare || '—'}</td>
           <td data-label="Ant."><span class="qty-badge">${r.kvantitet}</span></td>
           <td data-label="Lokasjon">${r.lokasjon || '—'}</td>
           <td data-label="Status">${statusDot(r.status)}</td>
@@ -152,19 +154,23 @@ async function render() {
 
 async function populateFilters(all) {
   if (!all) all = await API.getUtstyr();
-  const kats = [...new Set(all.map(r => r.kategori).filter(Boolean))].sort();
-  const loks = [...new Set(all.map(r => r.lokasjon).filter(Boolean))].sort();
-  const fk = $('filter-kat'), fl = $('filter-lok');
-  const ck = fk.value, cl = fl.value;
+  const kats   = [...new Set(all.map(r => r.kategori).filter(Boolean))].sort();
+  const merker = [...new Set(all.map(r => r.merke).filter(Boolean))].sort();
+  const loks   = [...new Set(all.map(r => r.lokasjon).filter(Boolean))].sort();
+  const fk = $('filter-kat'), fm = $('filter-merke'), fl = $('filter-lok');
+  const ck = fk.value, cm = fm.value, cl = fl.value;
   fk.innerHTML = '<option value="">Alle kategorier</option>' + kats.map(k => `<option value="${k}">${k}</option>`).join('');
+  fm.innerHTML = '<option value="">Alle merker</option>' + merker.map(m => `<option value="${m}">${m}</option>`).join('');
   fl.innerHTML = '<option value="">Alle lokasjoner</option>' + loks.map(l => `<option value="${l}">${l}</option>`).join('');
-  fk.value = ck; fl.value = cl;
+  fk.value = ck; fm.value = cm; fl.value = cl;
 }
+
+const SORT_COLS = ['kategori','merke','vare','kvantitet','lokasjon','status','serienummer','innkjopspris','innkjopsdato'];
 
 function sortBy(col) {
   if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
   document.querySelectorAll('thead th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
-  const idx = ['kategori','vare','kvantitet','lokasjon','status','serienummer','innkjopspris','innkjopsdato'].indexOf(col);
+  const idx = SORT_COLS.indexOf(col);
   if (idx >= 0) document.querySelectorAll('thead th')[idx].classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
   render();
 }
@@ -174,7 +180,7 @@ function sortBy(col) {
 function setMobileSort(col) {
   sortCol = col; sortDir = 1;
   document.querySelectorAll('thead th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
-  const idx = ['kategori','vare','kvantitet','lokasjon','status','serienummer','innkjopspris','innkjopsdato'].indexOf(col);
+  const idx = SORT_COLS.indexOf(col);
   if (idx >= 0) document.querySelectorAll('thead th')[idx].classList.add('sort-asc');
   render();
 }
@@ -673,7 +679,7 @@ async function exportCSV() {
 async function initApp() {
   await API.init();
 
-  ['search','filter-kat','filter-lok','filter-status'].forEach(id =>
+  ['search','filter-kat','filter-merke','filter-lok','filter-status'].forEach(id =>
     $(id).addEventListener('input', render)
   );
   $('nl-dato').value = today();
