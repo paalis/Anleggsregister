@@ -7,6 +7,7 @@
 create table utstyr (
   id            bigint primary key generated always as identity,
   kategori      text not null,
+  merke         text,
   vare          text not null,
   kvantitet     integer not null default 1,
   lokasjon      text,

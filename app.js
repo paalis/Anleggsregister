@@ -48,6 +48,8 @@ let loadingCount = 0;
 function showLoading() { loadingCount++; $('loading-bar').classList.add('active'); }
 function hideLoading() { loadingCount = Math.max(0, loadingCount - 1); if (loadingCount === 0) $('loading-bar').classList.remove('active'); }
 
+function fullNavn(r) { return r?.merke ? `${r.merke} ${r.vare}` : (r?.vare ?? ''); }
+
 function statusDot(s) {
   const cls = s === 'OK'      ? 'dot-ok'
             : s === 'Service' ? 'dot-service'
@@ -93,7 +95,7 @@ async function getFiltered() {
   const all = await API.getUtstyr();
   return all
     .filter(r => {
-      const match = !q || [r.vare, r.kategori, r.lokasjon, r.kommentar, r.serienummer]
+      const match = !q || [r.vare, r.merke, r.kategori, r.lokasjon, r.kommentar, r.serienummer]
         .some(v => (v || '').toLowerCase().includes(q));
       return match
         && (!kat || r.kategori === kat)
@@ -101,7 +103,8 @@ async function getFiltered() {
         && (!st  || r.status   === st);
     })
     .sort((a, b) => {
-      const av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
+      const av = sortCol === 'vare' ? fullNavn(a) : (a[sortCol] ?? '');
+      const bv = sortCol === 'vare' ? fullNavn(b) : (b[sortCol] ?? '');
       return (av < bv ? -1 : av > bv ? 1 : 0) * sortDir;
     });
 }
@@ -122,7 +125,7 @@ async function render() {
       tbody.innerHTML = rows.map(r => `
         <tr onclick="openItemModal(${r.id})">
           <td data-label="Kategori"><span class="cat-badge" style="color:${catColor(r.kategori)};border-color:${catColor(r.kategori)}22;background:${catColor(r.kategori)}11">${r.kategori}</span></td>
-          <td data-label="Vare / Modell">${r.vare || '—'}</td>
+          <td data-label="Vare / Modell">${fullNavn(r) || '—'}</td>
           <td data-label="Ant."><span class="qty-badge">${r.kvantitet}</span></td>
           <td data-label="Lokasjon">${r.lokasjon || '—'}</td>
           <td data-label="Status">${statusDot(r.status)}</td>
@@ -191,6 +194,7 @@ async function openItemModal(id) {
 
   const r = id !== null ? await API.getUtstyrById(id) : null;
   $('f-kategori').value    = r?.kategori     ?? 'Sub';
+  $('f-merke').value       = r?.merke        ?? '';
   $('f-vare').value        = r?.vare         ?? '';
   $('f-kvantitet').textContent = r?.kvantitet ?? 0;
   $('f-lokasjon').value    = r?.lokasjon     ?? '';
@@ -205,11 +209,12 @@ async function openItemModal(id) {
 
 async function saveItem() {
   const vare = $('f-vare').value.trim();
-  if (!vare) { showToast('Vare/modell er påkrevd.', 'error'); return; }
+  if (!vare) { showToast('Modellnavn er påkrevd.', 'error'); return; }
 
   await API.saveUtstyr({
     id:           editId,
     kategori:     $('f-kategori').value,
+    merke:        $('f-merke').value.trim(),
     vare,
     lokasjon:     $('f-lokasjon').value.trim(),
     kommentar:    $('f-kommentar').value.trim(),
@@ -247,13 +252,14 @@ async function renderQR() {
   const enhet = enheter.find(e => e.id === parseInt(sel.value)) || enheter[0] || null;
 
   const assetId   = enhet?.asset_id || null;
-  const visNavn   = assetId || r.vare;
+  const navn      = fullNavn(r);
+  const visNavn   = assetId || navn;
   const qrTekst   = assetId
-    ? JSON.stringify({ asset_id: assetId, vare: r.vare, kategori: r.kategori, serienummer: enhet?.serienummer || '' })
-    : JSON.stringify({ id: r.id, vare: r.vare, kategori: r.kategori });
+    ? JSON.stringify({ asset_id: assetId, vare: navn, kategori: r.kategori, serienummer: enhet?.serienummer || '' })
+    : JSON.stringify({ id: r.id, vare: navn, kategori: r.kategori });
 
   $('qr-vare-name').textContent = visNavn;
-  $('qr-vare-meta').textContent = `${r.vare} · ${r.kategori}${enhet?.serienummer ? ' · SN: ' + enhet.serienummer : ''}`;
+  $('qr-vare-meta').textContent = `${navn} · ${r.kategori}${enhet?.serienummer ? ' · SN: ' + enhet.serienummer : ''}`;
 
   const el = $('qr-canvas');
   el.innerHTML = '';
@@ -271,7 +277,7 @@ async function downloadQR() {
   const sel     = $('qr-enhet-select');
   const assetId = sel.options[sel.selectedIndex]?.dataset.asset;
   const r       = editId !== null ? await API.getUtstyrById(editId) : null;
-  const navn    = assetId || (r ? r.vare.replace(/\s+/g, '_') : 'utstyr');
+  const navn    = assetId || (r ? fullNavn(r).replace(/\s+/g, '_') : 'utstyr');
   const a = document.createElement('a');
   a.href     = canvas.toDataURL('image/png');
   a.download = `QR_${navn}.png`;
@@ -447,7 +453,7 @@ async function renderLogg() {
     return `<div class="logg-item">
       <div class="logg-date">${e.dato}</div>
       <div class="logg-body">
-        <div class="logg-title">${item ? item.vare : 'Ukjent utstyr'}</div>
+        <div class="logg-title">${item ? fullNavn(item) : 'Ukjent utstyr'}</div>
         <div class="logg-desc">
           <span class="logg-tag ${tagCls}">${typeLabel}</span>
           ${e.desc}${e.av ? ' — <em>' + e.av + '</em>' : ''}
@@ -473,7 +479,7 @@ async function openLoggModal(utstyrId = null) {
   $('lg-dato').value = today();
   const utstyr = await API.getUtstyr();
   const sel = $('lg-utstyr');
-  sel.innerHTML = utstyr.map(r => `<option value="${r.id}">${r.vare} (${r.kategori})</option>`).join('');
+  sel.innerHTML = utstyr.map(r => `<option value="${r.id}">${fullNavn(r)} (${r.kategori})</option>`).join('');
   if (utstyrId !== null) sel.value = utstyrId;
   await oppdaterLoggEnhetSelect(sel.value);
   $('logg-modal-overlay').classList.add('open');
@@ -534,7 +540,7 @@ async function renderUtlaan() {
       : (u.antall > 1 ? `<span class="enhet-badge">×${u.antall}</span>` : '');
     return `<div class="utlaan-card">
       <div class="utlaan-card-header">
-        <div class="utlaan-card-title">${item ? item.vare : 'Ukjent'}${enhetBadge ? ' ' + enhetBadge : ''}</div>
+        <div class="utlaan-card-title">${item ? fullNavn(item) : 'Ukjent'}${enhetBadge ? ' ' + enhetBadge : ''}</div>
         <span class="utlaan-badge${over ? ' overdue' : ''}">${over ? 'Forfalt' : 'Utlånt'}</span>
       </div>
       <div class="utlaan-meta">
@@ -561,7 +567,7 @@ async function openUtlaanModal(id) {
 
   const utstyr = await API.getUtstyr();
   const sel = $('ul-utstyr');
-  sel.innerHTML = utstyr.map(r => `<option value="${r.id}">${r.vare} (${r.kategori})</option>`).join('');
+  sel.innerHTML = utstyr.map(r => `<option value="${r.id}">${fullNavn(r)} (${r.kategori})</option>`).join('');
 
   const u = id !== null ? await API.getUtlaanById(id) : null;
   if (u) {
@@ -630,7 +636,7 @@ async function saveUtlaan() {
 async function returnerUtlaan(id) {
   const u    = await API.getUtlaanById(id);
   const item = u ? await API.getUtstyrById(u.utstyrId) : null;
-  if (!confirm(`Marker "${item?.vare ?? 'utstyr'}" som returnert?`)) return;
+  if (!confirm(`Marker "${item ? fullNavn(item) : 'utstyr'}" som returnert?`)) return;
   await API.returnerUtlaan(id);
   await renderUtlaan();
   await render();
@@ -647,11 +653,11 @@ async function deleteUtlaan() {
 // ── CSV-eksport ───────────────────────────────────────────────
 async function exportCSV() {
   const rows    = await getFiltered();
-  const headers = ['Kategori','Vare','Kvantitet','Lokasjon','Status','Serienummer','Innkjøpspris','Innkjøpsdato','Kommentar'];
+  const headers = ['Kategori','Merke','Modell','Kvantitet','Lokasjon','Status','Serienummer','Innkjøpspris','Innkjøpsdato','Kommentar'];
   const lines   = [
     headers.join(';'),
     ...rows.map(r =>
-      [r.kategori,r.vare,r.kvantitet,r.lokasjon,r.status,r.serienummer,r.innkjopspris,r.innkjopsdato,r.kommentar]
+      [r.kategori,r.merke,r.vare,r.kvantitet,r.lokasjon,r.status,r.serienummer,r.innkjopspris,r.innkjopsdato,r.kommentar]
         .map(v => `"${(v || '').toString().replace(/"/g, '""')}"`)
         .join(';')
     ),

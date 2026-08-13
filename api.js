@@ -36,7 +36,7 @@ const API = (() => {
 
   async function saveUtstyr(item) {
     const row = {
-      kategori: item.kategori, vare: item.vare,
+      kategori: item.kategori, merke: item.merke || null, vare: item.vare,
       lokasjon: item.lokasjon, kommentar: item.kommentar, status: item.status,
       serienummer: item.serienummer,
       innkjopspris: item.innkjopspris || null,
