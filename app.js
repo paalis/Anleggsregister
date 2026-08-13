@@ -715,7 +715,7 @@ async function renderProsjekter() {
       const antallTotalt = linjer.reduce((s, l) => s + (l.antall || 0), 0);
       const aktiv = p.status === 'Planlagt' || p.status === 'Pågår';
       const c = prosjektStatusColor(p.status);
-      return `<div class="utlaan-card">
+      return `<div class="utlaan-card" style="cursor:pointer" onclick="openProsjektModal(${p.id})">
         <div class="utlaan-card-header">
           <div class="utlaan-card-title">${p.navn}</div>
           <span class="cat-badge" style="color:${c};border-color:${c}22;background:${c}11">${p.status}</span>
@@ -728,8 +728,8 @@ async function renderProsjekter() {
           ${p.notat ? `<div><strong>Notat:</strong> ${p.notat}</div>` : ''}
         </div>
         <div class="utlaan-actions">
-          <button class="btn btn-ghost" style="font-size:0.7rem;padding:7px 12px" onclick="openProsjektModal(${p.id})">Rediger</button>
-          ${aktiv ? `<button class="btn btn-accent" style="font-size:0.7rem;padding:7px 12px" onclick="fullforProsjekt(${p.id})">Fullfør oppdrag</button>` : ''}
+          <button class="btn btn-ghost" style="font-size:0.7rem;padding:7px 12px" onclick="event.stopPropagation(); openProsjektModal(${p.id})">Rediger</button>
+          ${aktiv ? `<button class="btn btn-accent" style="font-size:0.7rem;padding:7px 12px" onclick="event.stopPropagation(); fullforProsjekt(${p.id})">Fullfør oppdrag</button>` : ''}
         </div>
       </div>`;
     }))).join('');
