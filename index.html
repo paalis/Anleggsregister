@@ -50,6 +50,8 @@
   .nav-mobile-toggle { display: none; }
   .header-mobile-toggle { display: none; }
   .nav-tab-list { display: contents; }
+  .nav-backdrop { display: none; }
+  .nav-drawer-header { display: none; }
 
   .toolbar { padding: 20px 40px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--surface); }
   .search-wrap { position: relative; flex: 1; min-width: 200px; }
@@ -197,13 +199,29 @@
       letter-spacing: 0.05em; text-transform: uppercase; color: var(--text);
       padding: 16px 20px; min-height: 44px;
     }
-    .nav-tab-list {
-      display: none; flex-direction: column;
-      position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    /* Menyvalgene sklir inn fra høyre som en skuff, i stedet for å falle ned */
+    .nav-backdrop {
+      display: block; position: fixed; inset: 0; z-index: 49;
+      background: rgba(0,0,0,0.5);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
     }
-    .nav-tabs.open .nav-tab-list { display: flex; }
+    .nav-tabs.open .nav-backdrop { opacity: 1; pointer-events: all; }
+    .nav-tab-list {
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; right: 0; bottom: 0; z-index: 50;
+      width: min(280px, 80vw);
+      background: var(--surface); border-left: 1px solid var(--border);
+      box-shadow: -8px 0 24px rgba(0,0,0,0.4);
+      padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+    }
+    .nav-tabs.open .nav-tab-list { transform: translateX(0); }
+    .nav-drawer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+    }
     .nav-tab-list .nav-tab {
       display: block; width: 100%; text-align: left; margin-bottom: 0;
       padding: 14px 20px; border-bottom: 1px solid var(--border); min-height: 44px;
@@ -293,7 +311,12 @@
   <div class="nav-mobile-toggle">
     <span id="nav-current-label">Utstyr</span>
   </div>
+  <div class="nav-backdrop" onclick="toggleMobileNav()"></div>
   <div class="nav-tab-list">
+    <div class="nav-drawer-header">
+      <span>Meny</span>
+      <button class="modal-close" onclick="toggleMobileNav()">×</button>
+    </div>
     <button class="nav-tab active" onclick="switchView('register', this)">Utstyr</button>
     <button class="nav-tab" onclick="switchView('prosjekt', this)">Prosjekter</button>
     <button class="nav-tab" onclick="switchView('utlaan', this)">Utlån</button>
