@@ -54,6 +54,28 @@ create table logg (
   opprettet     timestamptz default now()
 );
 
+-- PROSJEKTER (planlagte oppdrag)
+create table prosjekt (
+  id            bigint primary key generated always as identity,
+  navn          text not null,
+  sted          text,
+  fra           date not null,
+  til           date,
+  oppdragsgiver text,
+  status        text not null default 'Planlagt',
+  notat         text,
+  opprettet     timestamptz default now()
+);
+
+-- Utstyr planlagt til et prosjekt (modellnivå + antall)
+create table prosjekt_utstyr (
+  id          bigint primary key generated always as identity,
+  prosjekt_id bigint references prosjekt(id) on delete cascade,
+  utstyr_id   bigint references utstyr(id) on delete cascade,
+  antall      integer not null default 1,
+  opprettet   timestamptz default now()
+);
+
 -- ============================================================
 -- Seed: importer eksisterende utstyr
 -- ============================================================
@@ -101,18 +123,23 @@ insert into utstyr (kategori, vare, kvantitet, lokasjon, kommentar, status) valu
 -- Lar alle lese og skrive uten innlogging (intern app).
 -- Bytt til autentisert tilgang senere ved behov.
 -- ============================================================
-alter table utstyr   enable row level security;
-alter table enheter  enable row level security;
-alter table utlaan   enable row level security;
-alter table logg     enable row level security;
+alter table utstyr         enable row level security;
+alter table enheter        enable row level security;
+alter table utlaan         enable row level security;
+alter table logg           enable row level security;
+alter table prosjekt       enable row level security;
+alter table prosjekt_utstyr enable row level security;
 
-create policy "Alle kan lese og skrive utstyr"  on utstyr  for all using (true) with check (true);
-create policy "Alle kan lese og skrive enheter" on enheter for all using (true) with check (true);
-create policy "Alle kan lese og skrive utlaan"  on utlaan  for all using (true) with check (true);
-create policy "Alle kan lese og skrive logg"    on logg    for all using (true) with check (true);
+create policy "Alle kan lese og skrive utstyr"         on utstyr         for all using (true) with check (true);
+create policy "Alle kan lese og skrive enheter"        on enheter        for all using (true) with check (true);
+create policy "Alle kan lese og skrive utlaan"         on utlaan         for all using (true) with check (true);
+create policy "Alle kan lese og skrive logg"           on logg           for all using (true) with check (true);
+create policy "Alle kan lese og skrive prosjekt"       on prosjekt       for all using (true) with check (true);
+create policy "Alle kan lese og skrive prosjekt_utstyr" on prosjekt_utstyr for all using (true) with check (true);
 
 -- ============================================================
 -- Migrering (kjør dette hvis du allerede har data i databasen):
 -- alter table utlaan add column if not exists antall   integer not null default 1;
 -- alter table utlaan add column if not exists enhet_id bigint references enheter(id) on delete set null;
+-- alter table utstyr add column if not exists merke    text;
 -- ============================================================

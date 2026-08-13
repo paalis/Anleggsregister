@@ -19,11 +19,19 @@ const CAT_COLORS = {
   'Annet':         'var(--cat-default)',
 };
 
+const PROSJEKT_STATUS_COLORS = {
+  'Planlagt': 'var(--accent2)',
+  'Pågår':    'var(--accent)',
+  'Fullført': 'var(--ok)',
+  'Avlyst':   'var(--danger)',
+};
+
 // ── State ────────────────────────────────────────────────────
 let sortCol    = 'kategori', sortDir = 1;
 let editId     = null;   // utstyr
 let editUId    = null;   // utlån
 let editEnhetId = null;  // enhet som redigeres
+let editProsjektId = null; // prosjekt
 
 // ── Hjelpere ─────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -51,12 +59,15 @@ function hideLoading() { loadingCount = Math.max(0, loadingCount - 1); if (loadi
 function fullNavn(r) { return r?.merke ? `${r.merke} ${r.vare}` : (r?.vare ?? ''); }
 
 function statusDot(s) {
-  const cls = s === 'OK'      ? 'dot-ok'
-            : s === 'Service' ? 'dot-service'
-            : s === 'Utlånt'  ? 'dot-utlaan'
+  const cls = s === 'OK'        ? 'dot-ok'
+            : s === 'Service'   ? 'dot-service'
+            : s === 'Reservert' ? 'dot-reservert'
+            : s === 'Utlånt'    ? 'dot-utlaan'
             : 'dot-utgatt';
   return `<span class="status-dot"><span class="dot ${cls}"></span>${s}</span>`;
 }
+
+function prosjektStatusColor(s) { return PROSJEKT_STATUS_COLORS[s] || 'var(--muted)'; }
 
 // ── View switching ────────────────────────────────────────────
 function switchView(name, btn) {
@@ -64,8 +75,9 @@ function switchView(name, btn) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   $('view-' + name).classList.add('active');
   btn.classList.add('active');
-  if (name === 'utlaan') renderUtlaan();
-  if (name === 'logg')   renderLogg();
+  if (name === 'prosjekt') renderProsjekter();
+  if (name === 'utlaan')   renderUtlaan();
+  if (name === 'logg')     renderLogg();
 }
 
 function switchModalTab(tabId, btn) {
@@ -73,9 +85,10 @@ function switchModalTab(tabId, btn) {
   document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
   $(tabId).classList.add('active');
   btn.classList.add('active');
-  if (tabId === 'tab-qr')      renderQR();
-  if (tabId === 'tab-logg')    renderItemLogg();
-  if (tabId === 'tab-enheter') renderItemEnheter();
+  if (tabId === 'tab-qr')       renderQR();
+  if (tabId === 'tab-logg')     renderItemLogg();
+  if (tabId === 'tab-enheter')  renderItemEnheter();
+  if (tabId === 'ptab-utstyr')  renderProsjektUtstyrTab();
 }
 
 // ── Modal helpers ─────────────────────────────────────────────
@@ -654,6 +667,195 @@ async function deleteUtlaan() {
   closeModal('utlaan-modal-overlay');
   await renderUtlaan();
   await render();
+}
+
+// ════════════════════════════════════════════════════════════
+// PROSJEKTER
+// ════════════════════════════════════════════════════════════
+
+// Frigir utstyr tilbake til "OK" hvis det ikke lenger er reservert
+// av noe planlagt eller pågående prosjekt.
+async function releaseUtstyrHvisUbrukt(utstyrId) {
+  const item = await API.getUtstyrById(utstyrId);
+  if (item.status !== 'Reservert') return;
+  const aktiveProsjekter = (await API.getProsjekter()).filter(p => p.status === 'Planlagt' || p.status === 'Pågår');
+  for (const p of aktiveProsjekter) {
+    const linjer = await API.getProsjektUtstyr(p.id);
+    if (linjer.some(l => l.utstyrId === utstyrId)) return;
+  }
+  await API.setUtstyrStatus(utstyrId, 'OK');
+}
+
+async function renderProsjekter() {
+  showLoading();
+  try {
+    const el = $('prosjekt-grid');
+    const all = await API.getProsjekter();
+    if (!all.length) {
+      el.innerHTML = '<p style="color:var(--muted);padding:20px 0;grid-column:1/-1">Ingen prosjekter ennå.</p>';
+      return;
+    }
+
+    el.innerHTML = (await Promise.all(all.map(async p => {
+      const linjer = await API.getProsjektUtstyr(p.id);
+      const antallTotalt = linjer.reduce((s, l) => s + (l.antall || 0), 0);
+      const aktiv = p.status === 'Planlagt' || p.status === 'Pågår';
+      const c = prosjektStatusColor(p.status);
+      return `<div class="utlaan-card">
+        <div class="utlaan-card-header">
+          <div class="utlaan-card-title">${p.navn}</div>
+          <span class="cat-badge" style="color:${c};border-color:${c}22;background:${c}11">${p.status}</span>
+        </div>
+        <div class="utlaan-meta">
+          ${p.sted ? `<div><strong>Sted:</strong> ${p.sted}</div>` : ''}
+          <div><strong>Dato:</strong> ${p.fra}${p.til ? ' – ' + p.til : ''}</div>
+          ${p.oppdragsgiver ? `<div><strong>Oppdragsgiver:</strong> ${p.oppdragsgiver}</div>` : ''}
+          <div><strong>Utstyr:</strong> ${linjer.length ? `${linjer.length} linje${linjer.length === 1 ? '' : 'r'} · ${antallTotalt} stk` : 'Ingen lagt til ennå'}</div>
+          ${p.notat ? `<div><strong>Notat:</strong> ${p.notat}</div>` : ''}
+        </div>
+        <div class="utlaan-actions">
+          <button class="btn btn-ghost" style="font-size:0.7rem;padding:7px 12px" onclick="openProsjektModal(${p.id})">Rediger</button>
+          ${aktiv ? `<button class="btn btn-accent" style="font-size:0.7rem;padding:7px 12px" onclick="fullforProsjekt(${p.id})">Fullfør oppdrag</button>` : ''}
+        </div>
+      </div>`;
+    }))).join('');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function fullforProsjekt(id) {
+  if (!confirm('Merk prosjektet som fullført? Reservert utstyr blir frigitt.')) return;
+  const p = await API.getProsjektById(id);
+  await API.saveProsjekt({ ...p, id, status: 'Fullført' });
+  const linjer = await API.getProsjektUtstyr(id);
+  for (const l of linjer) await releaseUtstyrHvisUbrukt(l.utstyrId);
+  await renderProsjekter();
+  await render();
+}
+
+async function openProsjektModal(id) {
+  editProsjektId = id;
+
+  document.querySelectorAll('.modal-tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  $('ptab-info').classList.add('active');
+  $('prosjekt-modal-overlay').querySelector('.modal-tab').classList.add('active');
+
+  $('prosjekt-modal-title').textContent = id === null ? 'Nytt prosjekt' : 'Rediger prosjekt';
+  $('btn-prosjekt-delete').style.display = id === null ? 'none' : 'inline-block';
+
+  const p = id !== null ? await API.getProsjektById(id) : null;
+  $('p-navn').value          = p?.navn          ?? '';
+  $('p-sted').value          = p?.sted          ?? '';
+  $('p-oppdragsgiver').value = p?.oppdragsgiver ?? '';
+  $('p-fra').value           = p?.fra           ?? today();
+  $('p-til').value           = p?.til           ?? '';
+  $('p-status').value        = p?.status        ?? 'Planlagt';
+  $('p-notat').value         = p?.notat         ?? '';
+
+  await renderProsjektUtstyrTab();
+  $('prosjekt-modal-overlay').classList.add('open');
+}
+
+async function renderProsjektUtstyrTab() {
+  const utstyr = await API.getUtstyr();
+  const sel = $('pu-utstyr');
+  sel.innerHTML = utstyr.map(r => `<option value="${r.id}">${fullNavn(r)} (${r.kategori})</option>`).join('');
+
+  const el = $('prosjekt-utstyr-list');
+  if (editProsjektId === null) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:0.78rem">Lagre prosjektet først for å legge til utstyr.</p>';
+    return;
+  }
+
+  const linjer = await API.getProsjektUtstyr(editProsjektId);
+  if (!linjer.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:0.78rem;padding:8px 0">Ingen utstyr lagt til ennå.</p>';
+    return;
+  }
+  const utstyrMap = Object.fromEntries(utstyr.map(r => [r.id, r]));
+  el.innerHTML = linjer.map(l => {
+    const item = utstyrMap[l.utstyrId];
+    return `<div class="inline-logg-item">
+      <span class="inline-logg-text">${item ? fullNavn(item) : 'Ukjent utstyr'} <span style="color:var(--muted)">× ${l.antall}</span></span>
+      <button class="logg-del-btn" onclick="fjernProsjektUtstyr(${l.id})">×</button>
+    </div>`;
+  }).join('');
+}
+
+async function leggTilProsjektUtstyr() {
+  if (editProsjektId === null) { showToast('Lagre prosjektet først.', 'error'); return; }
+  const utstyrId = parseInt($('pu-utstyr').value);
+  const antall   = parseInt($('pu-antall').value) || 1;
+  if (!utstyrId) return;
+
+  const item = await API.getUtstyrById(utstyrId);
+  if (item.status === 'Utlånt') {
+    showToast(`OBS: ${fullNavn(item)} er allerede utlånt.`, 'error');
+  } else if (item.status === 'Reservert') {
+    showToast(`OBS: ${fullNavn(item)} er allerede reservert til et annet prosjekt.`, 'error');
+  } else if (item.status === 'OK') {
+    await API.setUtstyrStatus(utstyrId, 'Reservert');
+    await render();
+  }
+
+  await API.addProsjektUtstyr({ prosjektId: editProsjektId, utstyrId, antall });
+  $('pu-antall').value = 1;
+  await renderProsjektUtstyrTab();
+}
+
+async function fjernProsjektUtstyr(id) {
+  const linjer = await API.getProsjektUtstyr(editProsjektId);
+  const linje = linjer.find(l => l.id === id);
+  await API.removeProsjektUtstyr(id);
+  if (linje) await releaseUtstyrHvisUbrukt(linje.utstyrId);
+  await renderProsjektUtstyrTab();
+  await render();
+}
+
+async function saveProsjekt() {
+  const navn = $('p-navn').value.trim();
+  if (!navn) { showToast('Navn er påkrevd.', 'error'); return; }
+  const fra = $('p-fra').value;
+  if (!fra) { showToast('Fra-dato er påkrevd.', 'error'); return; }
+
+  const forrigeStatus = editProsjektId !== null ? (await API.getProsjektById(editProsjektId)).status : null;
+  const nyStatus = $('p-status').value;
+
+  const p = await API.saveProsjekt({
+    id:            editProsjektId,
+    navn, fra,
+    sted:          $('p-sted').value.trim(),
+    til:           $('p-til').value,
+    oppdragsgiver: $('p-oppdragsgiver').value.trim(),
+    status:        nyStatus,
+    notat:         $('p-notat').value.trim(),
+  });
+  editProsjektId = p.id;
+
+  // Frigi reservert utstyr hvis prosjektet akkurat ble fullført/avlyst
+  const erAktiv = s => s === 'Planlagt' || s === 'Pågår';
+  let frigjortNoe = false;
+  if (forrigeStatus !== null && erAktiv(forrigeStatus) && !erAktiv(nyStatus)) {
+    const linjer = await API.getProsjektUtstyr(editProsjektId);
+    for (const l of linjer) await releaseUtstyrHvisUbrukt(l.utstyrId);
+    frigjortNoe = linjer.length > 0;
+  }
+
+  closeModal('prosjekt-modal-overlay');
+  await renderProsjekter();
+  if (frigjortNoe) await render();
+}
+
+async function deleteProsjekt() {
+  if (!confirm('Slette dette prosjektet? Reservert utstyr blir frigitt.')) return;
+  const linjer = await API.getProsjektUtstyr(editProsjektId);
+  await API.deleteProsjekt(editProsjektId);
+  for (const l of linjer) await releaseUtstyrHvisUbrukt(l.utstyrId);
+  closeModal('prosjekt-modal-overlay');
+  await renderProsjekter();
+  if (linjer.length) await render();
 }
 
 // ── CSV-eksport ───────────────────────────────────────────────

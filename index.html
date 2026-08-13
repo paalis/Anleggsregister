@@ -22,7 +22,7 @@
   :root {
     --bg: #0d0f14; --surface: #141720; --surface2: #1c2030; --border: #252b3d;
     --accent: #e8ff47; --accent2: #47b8ff; --text: #e8eaf0; --muted: #6b7290;
-    --danger: #ff5c5c; --ok: #4dff9e; --service: #ffb347; --utgatt: #ff5c5c; --utlaan: #c084fc;
+    --danger: #ff5c5c; --ok: #4dff9e; --service: #ffb347; --utgatt: #ff5c5c; --utlaan: #c084fc; --reservert: #2dd4bf;
     --cat-sub: #a78bfa; --cat-topper: #60a5fa; --cat-monitor: #34d399;
     --cat-lydmixer: #f472b6; --cat-lysmixer: #fbbf24; --cat-stagerack: #fb923c;
     --cat-mikrofon: #38bdf8; --cat-di: #a3e635; --cat-stativ: #e879f9; --cat-default: #94a3b8;
@@ -89,6 +89,7 @@
   .dot-service { background: var(--service); box-shadow: 0 0 6px var(--service); }
   .dot-utgatt { background: var(--utgatt); box-shadow: 0 0 6px var(--utgatt); }
   .dot-utlaan { background: var(--utlaan); box-shadow: 0 0 6px var(--utlaan); }
+  .dot-reservert { background: var(--reservert); box-shadow: 0 0 6px var(--reservert); }
   .qty-badge { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--accent2); }
   .no-results { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 0.85rem; }
 
@@ -257,6 +258,7 @@
 
 <div class="nav-tabs">
   <button class="nav-tab active" onclick="switchView('register', this)">Utstyr</button>
+  <button class="nav-tab" onclick="switchView('prosjekt', this)">Prosjekter</button>
   <button class="nav-tab" onclick="switchView('utlaan', this)">Utlån</button>
   <button class="nav-tab" onclick="switchView('logg', this)">Servicelogg</button>
 </div>
@@ -274,6 +276,7 @@
     <select id="filter-status">
       <option value="">Alle statuser</option>
       <option value="OK">OK</option>
+      <option value="Reservert">Reservert</option>
       <option value="Utlånt">Utlånt</option>
       <option value="Service">Service</option>
       <option value="Utgått">Utgått</option>
@@ -310,6 +313,15 @@
     </table>
     <div id="no-results" class="no-results" style="display:none">Ingen resultater matcher filteret.</div>
   </div>
+</div>
+
+<!-- PROSJEKTER -->
+<div class="view" id="view-prosjekt">
+  <div class="section-header">
+    <span class="section-title">Prosjekter</span>
+    <button class="btn btn-accent" onclick="openProsjektModal(null)">+ Nytt prosjekt</button>
+  </div>
+  <div class="utlaan-grid" id="prosjekt-grid"></div>
 </div>
 
 <!-- UTLÅN -->
@@ -349,7 +361,7 @@
           <div class="form-group"><label>Kategori *</label>
             <select id="f-kategori"><option>Sub</option><option>Topper</option><option>Monitor</option><option>Lydmixer</option><option>Lysmixer</option><option>Stagerack</option><option>Mikrofon</option><option>DI</option><option>Stativ - gitar</option><option>Annet</option></select></div>
           <div class="form-group"><label>Status *</label>
-            <select id="f-status"><option>OK</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
+            <select id="f-status"><option>OK</option><option>Reservert</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
           <div class="form-group form-full"><label>Merke</label><input type="text" id="f-merke" placeholder="f.eks. Shure"></div>
           <div class="form-group form-full"><label>Modellnavn *</label><input type="text" id="f-vare" placeholder="f.eks. SM58"></div>
           <div class="form-group"><label>Antall enheter</label><div style="padding:10px 0;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:var(--accent2)" id="f-kvantitet">—</div></div>
@@ -370,7 +382,7 @@
             <div class="form-group"><label>Asset-ID</label>
               <div id="ee-asset-id-display" style="padding:10px 12px;border:1px solid var(--border);border-radius:6px;color:var(--accent2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem">—</div></div>
             <div class="form-group"><label>Status</label>
-              <select id="ee-status"><option>OK</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
+              <select id="ee-status"><option>OK</option><option>Reservert</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
             <div class="form-group"><label>Lokasjon</label><input type="text" id="ee-lokasjon" placeholder="f.eks. Selbu"></div>
             <div class="form-group"><label>Serienummer (produsentens SN)</label><input type="text" id="ee-serienummer" placeholder="f.eks. 3B7X92"></div>
             <div class="form-group form-full"><label>Kommentar</label><input type="text" id="ee-kommentar" placeholder="f.eks. koffert A"></div>
@@ -419,6 +431,50 @@
       <button class="btn btn-danger" id="btn-item-delete" onclick="deleteItem()" style="display:none">Slett</button>
       <button class="btn btn-ghost" onclick="closeModal('item-modal-overlay')">Avbryt</button>
       <button class="btn btn-accent" onclick="saveItem()">Lagre</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PROSJEKT -->
+<div class="modal-overlay" id="prosjekt-modal-overlay" onclick="closeModalIfBg(event,'prosjekt-modal-overlay')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="prosjekt-modal-title">Nytt prosjekt</h2>
+      <button class="modal-close" onclick="closeModal('prosjekt-modal-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchModalTab('ptab-info',this)">Info</button>
+        <button class="modal-tab" onclick="switchModalTab('ptab-utstyr',this)">Utstyr</button>
+      </div>
+      <div class="modal-tab-content active" id="ptab-info">
+        <div class="form-grid">
+          <div class="form-group form-full"><label>Navn *</label><input type="text" id="p-navn" placeholder="f.eks. Bryllup Solsiden"></div>
+          <div class="form-group"><label>Sted</label><input type="text" id="p-sted" placeholder="f.eks. Selbu samfunnshus"></div>
+          <div class="form-group"><label>Oppdragsgiver</label><input type="text" id="p-oppdragsgiver" placeholder="Navn / organisasjon"></div>
+          <div class="form-group"><label>Fra *</label><input type="date" id="p-fra"></div>
+          <div class="form-group"><label>Til</label><input type="date" id="p-til"></div>
+          <div class="form-group"><label>Status</label>
+            <select id="p-status"><option>Planlagt</option><option>Pågår</option><option>Fullført</option><option>Avlyst</option></select></div>
+          <div class="form-group form-full"><label>Notat</label><textarea id="p-notat" rows="2" placeholder="Ekstra informasjon..."></textarea></div>
+        </div>
+      </div>
+      <div class="modal-tab-content" id="ptab-utstyr">
+        <div class="inline-logg" id="prosjekt-utstyr-list"></div>
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin:14px 0 8px">Legg til utstyr</div>
+        <div class="form-grid">
+          <div class="form-group form-full"><label>Utstyr</label>
+            <select id="pu-utstyr"></select></div>
+          <div class="form-group"><label>Antall</label>
+            <input type="number" id="pu-antall" min="1" value="1"></div>
+        </div>
+        <button class="btn btn-ghost" style="margin-top:8px" onclick="leggTilProsjektUtstyr()">+ Legg til</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="btn-prosjekt-delete" onclick="deleteProsjekt()" style="display:none">Slett</button>
+      <button class="btn btn-ghost" onclick="closeModal('prosjekt-modal-overlay')">Avbryt</button>
+      <button class="btn btn-accent" onclick="saveProsjekt()">Lagre</button>
     </div>
   </div>
 </div>

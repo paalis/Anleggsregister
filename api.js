@@ -211,12 +211,66 @@ const API = (() => {
     check(error, 'deleteLogg');
   }
 
+  // ── Prosjekter ───────────────────────────────────────────────
+
+  async function getProsjekter() {
+    const { data, error } = await sb.from('prosjekt').select('*').order('fra', { ascending: false });
+    check(error, 'getProsjekter'); return data;
+  }
+
+  async function getProsjektById(id) {
+    const { data, error } = await sb.from('prosjekt').select('*').eq('id', id).single();
+    check(error, 'getProsjektById'); return data;
+  }
+
+  async function saveProsjekt(entry) {
+    const row = {
+      navn: entry.navn, sted: entry.sted || null,
+      fra: entry.fra, til: entry.til || null,
+      oppdragsgiver: entry.oppdragsgiver || null,
+      status: entry.status || 'Planlagt',
+      notat: entry.notat || null,
+    };
+    if (entry.id != null) {
+      const { data, error } = await sb.from('prosjekt').update(row).eq('id', entry.id).select().single();
+      check(error, 'saveProsjekt (update)'); return data;
+    } else {
+      const { data, error } = await sb.from('prosjekt').insert(row).select().single();
+      check(error, 'saveProsjekt (insert)'); return data;
+    }
+  }
+
+  async function deleteProsjekt(id) {
+    const { error } = await sb.from('prosjekt').delete().eq('id', id);
+    check(error, 'deleteProsjekt');
+  }
+
+  async function getProsjektUtstyr(prosjektId) {
+    const { data, error } = await sb.from('prosjekt_utstyr').select('*').eq('prosjekt_id', prosjektId).order('id');
+    check(error, 'getProsjektUtstyr');
+    return data.map(p => ({ ...p, prosjektId: p.prosjekt_id, utstyrId: p.utstyr_id }));
+  }
+
+  async function addProsjektUtstyr(entry) {
+    const row = { prosjekt_id: entry.prosjektId, utstyr_id: entry.utstyrId, antall: entry.antall || 1 };
+    const { data, error } = await sb.from('prosjekt_utstyr').insert(row).select().single();
+    check(error, 'addProsjektUtstyr');
+    return { ...data, prosjektId: data.prosjekt_id, utstyrId: data.utstyr_id };
+  }
+
+  async function removeProsjektUtstyr(id) {
+    const { error } = await sb.from('prosjekt_utstyr').delete().eq('id', id);
+    check(error, 'removeProsjektUtstyr');
+  }
+
   return {
     init,
     getUtstyr, getUtstyrById, saveUtstyr, deleteUtstyr, setUtstyrStatus,
     getEnheter, getEnhetById, getNextEnhetNr, saveEnhet, deleteEnhet, setEnhetStatus,
     getUtlaan, getUtlaanById, saveUtlaan, returnerUtlaan, deleteUtlaan,
     getLogg, getLoggForUtstyr, saveLogg, deleteLogg,
+    getProsjekter, getProsjektById, saveProsjekt, deleteProsjekt,
+    getProsjektUtstyr, addProsjektUtstyr, removeProsjektUtstyr,
   };
 
 })();
