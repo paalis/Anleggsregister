@@ -123,7 +123,7 @@ async function getFiltered() {
   const all = await API.getUtstyr();
   return all
     .filter(r => {
-      const match = !q || [r.vare, r.merke, r.kategori, r.lokasjon, r.kommentar, r.serienummer]
+      const match = !q || [r.vare, r.merke, r.kategori, r.lokasjon, r.kommentar]
         .some(v => (v || '').toLowerCase().includes(q));
       return match
         && (!kat || r.kategori === kat)
@@ -158,7 +158,6 @@ async function render() {
           <td data-label="Ant."><span class="qty-badge">${r.kvantitet}</span></td>
           <td data-label="Lokasjon">${r.lokasjon || '—'}</td>
           <td data-label="Status">${statusDot(r.status)}</td>
-          <td data-label="Serienr." style="color:var(--muted);font-size:0.78rem">${r.serienummer || '—'}</td>
           <td data-label="Pris (NOK)" style="color:var(--muted);font-size:0.78rem">${r.innkjopspris ? Number(r.innkjopspris).toLocaleString('nb-NO') : '—'}</td>
           <td data-label="Dato" style="color:var(--muted);font-size:0.78rem">${r.innkjopsdato || '—'}</td>
           <td data-label="Kommentar" style="color:var(--muted);font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.kommentar || ''}</td>
@@ -192,7 +191,7 @@ async function populateFilters(all) {
   fk.value = ck; fm.value = cm; fl.value = cl;
 }
 
-const SORT_COLS = ['kategori','merke','vare','kvantitet','lokasjon','status','serienummer','innkjopspris','innkjopsdato'];
+const SORT_COLS = ['kategori','merke','vare','kvantitet','lokasjon','status','innkjopspris','innkjopsdato'];
 
 function sortBy(col) {
   if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
@@ -233,7 +232,6 @@ async function openItemModal(id) {
   $('f-lokasjon').value    = r?.lokasjon     ?? '';
   $('f-kommentar').value   = r?.kommentar    ?? '';
   $('f-status').value      = r?.status       ?? 'OK';
-  $('f-serienummer').value = r?.serienummer  ?? '';
   $('f-pris').value        = r?.innkjopspris ?? '';
   $('f-dato').value        = r?.innkjopsdato ?? '';
 
@@ -252,7 +250,6 @@ async function saveItem() {
     lokasjon:     $('f-lokasjon').value.trim(),
     kommentar:    $('f-kommentar').value.trim(),
     status:       $('f-status').value,
-    serienummer:  $('f-serienummer').value.trim(),
     innkjopspris: $('f-pris').value,
     innkjopsdato: $('f-dato').value,
   });
@@ -875,11 +872,11 @@ async function deleteProsjekt() {
 // ── CSV-eksport ───────────────────────────────────────────────
 async function exportCSV() {
   const rows    = await getFiltered();
-  const headers = ['Kategori','Merke','Modell','Kvantitet','Lokasjon','Status','Serienummer','Innkjøpspris','Innkjøpsdato','Kommentar'];
+  const headers = ['Kategori','Merke','Modell','Kvantitet','Lokasjon','Status','Innkjøpspris','Innkjøpsdato','Kommentar'];
   const lines   = [
     headers.join(';'),
     ...rows.map(r =>
-      [r.kategori,r.merke,r.vare,r.kvantitet,r.lokasjon,r.status,r.serienummer,r.innkjopspris,r.innkjopsdato,r.kommentar]
+      [r.kategori,r.merke,r.vare,r.kvantitet,r.lokasjon,r.status,r.innkjopspris,r.innkjopsdato,r.kommentar]
         .map(v => `"${(v || '').toString().replace(/"/g, '""')}"`)
         .join(';')
     ),

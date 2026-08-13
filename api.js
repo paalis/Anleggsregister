@@ -38,7 +38,6 @@ const API = (() => {
     const row = {
       kategori: item.kategori, merke: item.merke || null, vare: item.vare,
       lokasjon: item.lokasjon, kommentar: item.kommentar, status: item.status,
-      serienummer: item.serienummer,
       innkjopspris: item.innkjopspris || null,
       innkjopsdato: item.innkjopsdato || null,
     };

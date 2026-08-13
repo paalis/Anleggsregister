@@ -13,7 +13,6 @@ create table utstyr (
   lokasjon      text,
   kommentar     text,
   status        text not null default 'OK',
-  serienummer   text,
   innkjopspris  numeric,
   innkjopsdato  date,
   opprettet     timestamptz default now()
@@ -142,4 +141,5 @@ create policy "Alle kan lese og skrive prosjekt_utstyr" on prosjekt_utstyr for a
 -- alter table utlaan add column if not exists antall   integer not null default 1;
 -- alter table utlaan add column if not exists enhet_id bigint references enheter(id) on delete set null;
 -- alter table utstyr add column if not exists merke    text;
+-- alter table utstyr drop column if exists serienummer; -- serienummer flyttet til enheter
 -- ============================================================
