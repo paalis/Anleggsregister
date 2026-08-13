@@ -220,6 +220,10 @@ async function openItemModal(id, tab = 'tab-info') {
   $('btn-item-delete').style.display = id === null ? 'none' : 'inline-block';
 
   const r = id !== null ? await API.getUtstyrById(id) : null;
+  const subtitle = $('item-modal-subtitle');
+  if (r) { subtitle.textContent = fullNavn(r); subtitle.style.display = 'block'; }
+  else   { subtitle.style.display = 'none'; }
+
   $('f-kategori').value    = r?.kategori     ?? 'Sub';
   $('f-merke').value       = r?.merke        ?? '';
   $('f-vare').value        = r?.vare         ?? '';
