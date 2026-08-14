@@ -819,7 +819,14 @@ async function renderProsjektUtstyrTab() {
     grupper.get(l.utstyrId).push(l);
   }
 
-  el.innerHTML = [...grupper.entries()].map(([utstyrId, gruppeLinjer]) => {
+  // Grupperes og sorteres etter kategori, med en subtil kategorioverskrift
+  // hver gang kategorien endrer seg.
+  const grupperArr = [...grupper.entries()]
+    .map(([utstyrId, gruppeLinjer]) => ({ utstyrId, gruppeLinjer, kategori: utstyrMap[utstyrId]?.kategori || 'Annet' }))
+    .sort((a, b) => a.kategori.localeCompare(b.kategori, 'no'));
+
+  let sisteKategori = null;
+  el.innerHTML = grupperArr.map(({ utstyrId, gruppeLinjer, kategori }) => {
     const item = utstyrMap[utstyrId];
     const badges = gruppeLinjer.map(l => {
       const enhet = enheterMap[l.enhetId];
@@ -833,7 +840,9 @@ async function renderProsjektUtstyrTab() {
       ? `<input type="text" class="prosjekt-utstyr-kommentar" placeholder="Kommentar (valgfritt)" value="${kommentarAttr}" autofocus
            onclick="event.stopPropagation()" onchange="lagreProsjektUtstyrKommentar(${utstyrId}, this.value)">`
       : (kommentar ? `<span class="prosjekt-kommentar-tekst" title="${kommentarAttr}">${kommentar}</span>` : '');
-    return `<div class="inline-logg-item prosjekt-utstyr-rad" onclick="toggleProsjektKommentar(${utstyrId})">
+    const overskrift = kategori !== sisteKategori ? `<div class="prosjekt-utstyr-kategori">${kategori}</div>` : '';
+    sisteKategori = kategori;
+    return `${overskrift}<div class="inline-logg-item prosjekt-utstyr-rad" onclick="toggleProsjektKommentar(${utstyrId})">
       <span class="inline-logg-text">${item ? fullNavn(item) : 'Ukjent utstyr'} <span style="color:var(--muted)">× ${gruppeLinjer.length}</span> ${badges}</span>
       ${kommentarHtml}
     </div>`;
