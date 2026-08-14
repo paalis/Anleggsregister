@@ -209,6 +209,11 @@ function setMobileSort(col) {
 async function openItemModal(id, tab = 'tab-info') {
   editId = id;
 
+  // Nullstill ev. åpne enhets-skjemaer som ble stående fra forrige gang
+  // modalen var oppe, slik at man ikke ser data fra et annet utstyr.
+  avbrytEnhetRedigering();
+  skjulNyEnhetForm();
+
   document.querySelectorAll('.modal-tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
   $(tab).classList.add('active');
@@ -314,8 +319,10 @@ async function downloadQR() {
 async function renderItemEnheter() {
   if (editId === null) {
     $('item-enheter-list').innerHTML = '<p style="color:var(--muted);font-size:0.78rem">Lagre utstyret først for å registrere enheter.</p>';
+    $('btn-vis-ny-enhet').style.display = 'none';
     return;
   }
+  $('btn-vis-ny-enhet').style.display = 'inline-block';
   const enheter = await API.getEnheter(editId);
   const el = $('item-enheter-list');
   if (!enheter.length) {
@@ -350,7 +357,7 @@ function skjulNyEnhetForm() {
 }
 
 async function leggTilEnhet() {
-  if (editId === null) { showToast('Lagre utstyret først.', 'error'); return; }
+  if (editId === null) { showToast('Lagre utstyret først, så kan du legge til enheter.', 'error'); return; }
   const nr = await API.getNextEnhetNr(editId);
   await API.saveEnhet({
     utstyrId:    editId,

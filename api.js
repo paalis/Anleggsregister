@@ -8,6 +8,22 @@
 const SUPABASE_URL = 'https://wocbanyacwklsgemjcnx.supabase.co'; // <- din URL
 const SUPABASE_KEY = 'sb_publishable_cI4_LoUOOQG8B36Z98Y2TQ_y3INe4Hr';                  // <- din publishable key
 
+// Faste, unike prefikser per kategori for asset-ID (unngår kollisjon
+// mellom kategorier som ellers ville fått samme 2-bokstavsforkortelse,
+// f.eks. Lydmixer/Lysmixer eller Stagerack/Stativ - gitar).
+const KATEGORI_PREFIX = {
+  'Sub':            'SU',
+  'Topper':         'TO',
+  'Monitor':        'MO',
+  'Lydmixer':       'LM',
+  'Lysmixer':       'LY',
+  'Stagerack':      'SR',
+  'Mikrofon':       'MI',
+  'DI':             'DI',
+  'Stativ - gitar': 'ST',
+  'Annet':          'AN',
+};
+
 const API = (() => {
 
   let sb;
@@ -76,7 +92,9 @@ const API = (() => {
   }
 
   async function lagAssetId(kategori) {
-    const prefix = kategori.replace(/[^a-zA-ZæøåÆØÅ]/g, '').substring(0, 2).toUpperCase();
+    const prefix = KATEGORI_PREFIX[kategori]
+      || kategori.replace(/[^a-zA-ZæøåÆØÅ]/g, '').substring(0, 2).toUpperCase()
+      || 'XX';
     const { data } = await sb.from('enheter').select('asset_id').like('asset_id', `${prefix}-%`);
     let nestNum = 1;
     if (data && data.length > 0) {
