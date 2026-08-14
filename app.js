@@ -316,6 +316,19 @@ async function downloadQR() {
 // ENHETER
 // ════════════════════════════════════════════════════════════
 
+// Finn hvilket aktive prosjekt (om noe) hver enhet er reservert til.
+async function finnEnhetProsjekter(enhetIds) {
+  const aktiveProsjekter = (await API.getProsjekter()).filter(p => p.status === 'Planlagt' || p.status === 'Pågår');
+  const map = {};
+  for (const p of aktiveProsjekter) {
+    const linjer = await API.getProsjektUtstyr(p.id);
+    for (const l of linjer) {
+      if (enhetIds.includes(l.enhetId)) map[l.enhetId] = p.navn;
+    }
+  }
+  return map;
+}
+
 async function renderItemEnheter() {
   if (editId === null) {
     $('item-enheter-list').innerHTML = '<p style="color:var(--muted);font-size:0.78rem">Lagre utstyret først for å registrere enheter.</p>';
@@ -328,6 +341,7 @@ async function renderItemEnheter() {
   if (!enheter.length) {
     el.innerHTML = '<p style="color:var(--muted);font-size:0.78rem;padding:8px 0">Ingen individuelle enheter registrert ennå.</p>';
   } else {
+    const prosjektMap = await finnEnhetProsjekter(enheter.map(e => e.id));
     el.innerHTML = enheter.map(e => `
       <div class="inline-logg-item">
         <span class="inline-logg-date" style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent2)">${e.asset_id || '#' + e.enhet_nr}</span>
@@ -337,6 +351,7 @@ async function renderItemEnheter() {
           ${e.serienummer ? `<span style="color:var(--muted);margin-left:10px">SN: ${e.serienummer}</span>` : ''}
           ${e.kommentar   ? `<span style="color:var(--muted);margin-left:8px">— ${e.kommentar}</span>` : ''}
         </span>
+        <span class="inline-logg-prosjekt">${prosjektMap[e.id] ? `📁 ${prosjektMap[e.id]}` : ''}</span>
         <button class="logg-del-btn" style="margin-right:2px" onclick="redigerEnhet(${e.id})" title="Rediger">✎</button>
         <button class="logg-del-btn" onclick="slett_enhet(${e.id})">×</button>
       </div>`).join('');
