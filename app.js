@@ -832,7 +832,7 @@ async function renderProsjektUtstyrTab() {
     const kommentarHtml = erApen
       ? `<input type="text" class="prosjekt-utstyr-kommentar" placeholder="Kommentar (valgfritt)" value="${kommentarAttr}" autofocus
            onclick="event.stopPropagation()" onchange="lagreProsjektUtstyrKommentar(${utstyrId}, this.value)">`
-      : (kommentar ? `<span class="prosjekt-kommentar-ikon" title="${kommentarAttr}">💬</span>` : '');
+      : (kommentar ? `<span class="prosjekt-kommentar-tekst" title="${kommentarAttr}">${kommentar}</span>` : '');
     return `<div class="inline-logg-item prosjekt-utstyr-rad" onclick="toggleProsjektKommentar(${utstyrId})">
       <span class="inline-logg-text">${item ? fullNavn(item) : 'Ukjent utstyr'} <span style="color:var(--muted)">× ${gruppeLinjer.length}</span> ${badges}</span>
       ${kommentarHtml}
