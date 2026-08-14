@@ -766,6 +766,7 @@ async function fullforProsjekt(id) {
 
 async function openProsjektModal(id) {
   editProsjektId = id;
+  prosjektKommentarApen = null;
 
   document.querySelectorAll('.modal-tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
@@ -823,14 +824,28 @@ async function renderProsjektUtstyrTab() {
     const badges = gruppeLinjer.map(l => {
       const enhet = enheterMap[l.enhetId];
       const label = enhet ? (enhet.asset_id || '#' + enhet.enhet_nr) : 'Ukjent';
-      return `<span class="enhet-badge removable-badge" onclick="fjernProsjektUtstyr(${l.id})" title="Fjern ${label}">${label} ×</span>`;
+      return `<span class="enhet-badge removable-badge" onclick="event.stopPropagation(); fjernProsjektUtstyr(${l.id})" title="Fjern ${label}">${label} ×</span>`;
     }).join('');
-    const kommentar = (gruppeLinjer.find(l => l.kommentar)?.kommentar || '').replace(/"/g, '&quot;');
-    return `<div class="inline-logg-item prosjekt-utstyr-gruppe">
+    const kommentar = gruppeLinjer.find(l => l.kommentar)?.kommentar || '';
+    const kommentarAttr = kommentar.replace(/"/g, '&quot;');
+    const erApen = prosjektKommentarApen === utstyrId;
+    const kommentarHtml = erApen
+      ? `<input type="text" class="prosjekt-utstyr-kommentar" placeholder="Kommentar (valgfritt)" value="${kommentarAttr}" autofocus
+           onclick="event.stopPropagation()" onchange="lagreProsjektUtstyrKommentar(${utstyrId}, this.value)">`
+      : (kommentar ? `<span class="prosjekt-kommentar-ikon" title="${kommentarAttr}">💬</span>` : '');
+    return `<div class="inline-logg-item prosjekt-utstyr-rad" onclick="toggleProsjektKommentar(${utstyrId})">
       <span class="inline-logg-text">${item ? fullNavn(item) : 'Ukjent utstyr'} <span style="color:var(--muted)">× ${gruppeLinjer.length}</span> ${badges}</span>
-      <input type="text" class="prosjekt-utstyr-kommentar" placeholder="Kommentar (valgfritt)" value="${kommentar}" onchange="lagreProsjektUtstyrKommentar(${utstyrId}, this.value)">
+      ${kommentarHtml}
     </div>`;
   }).join('');
+}
+
+// Hvilken varegruppes kommentarfelt som er åpent i prosjektets utstyrsliste.
+let prosjektKommentarApen = null;
+
+function toggleProsjektKommentar(utstyrId) {
+  prosjektKommentarApen = prosjektKommentarApen === utstyrId ? null : utstyrId;
+  renderProsjektUtstyrTab();
 }
 
 async function lagreProsjektUtstyrKommentar(utstyrId, kommentar) {
