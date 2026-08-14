@@ -69,6 +69,7 @@ create table prosjekt_utstyr (
   prosjekt_id bigint references prosjekt(id) on delete cascade,
   utstyr_id   bigint references utstyr(id) on delete cascade,
   enhet_id    bigint not null references enheter(id) on delete cascade,
+  kommentar   text,
   opprettet   timestamptz default now()
 );
 
@@ -159,4 +160,5 @@ create policy "Alle kan lese og skrive prosjekt_utstyr" on prosjekt_utstyr for a
 -- alter table enheter add column innkjopsdato date;
 -- alter table utstyr drop column if exists innkjopspris;
 -- alter table utstyr drop column if exists innkjopsdato;
+-- alter table prosjekt_utstyr add column kommentar text;
 -- ============================================================

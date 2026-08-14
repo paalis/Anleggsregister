@@ -271,6 +271,16 @@ const API = (() => {
     check(error, 'removeProsjektUtstyr');
   }
 
+  // Setter samme kommentar på alle reserverte enheter av samme vare i
+  // prosjektet, siden kommentaren vises som én felles merknad per
+  // varegruppe i utstyrslisten.
+  async function setProsjektUtstyrKommentar(prosjektId, utstyrId, kommentar) {
+    const { error } = await sb.from('prosjekt_utstyr')
+      .update({ kommentar: kommentar || null })
+      .eq('prosjekt_id', prosjektId).eq('utstyr_id', utstyrId);
+    check(error, 'setProsjektUtstyrKommentar');
+  }
+
   return {
     init,
     getUtstyr, getUtstyrById, saveUtstyr, deleteUtstyr,
@@ -278,7 +288,7 @@ const API = (() => {
     getUtlaan, getUtlaanById, saveUtlaan, returnerUtlaan, deleteUtlaan,
     getLogg, getLoggForUtstyr, saveLogg, deleteLogg,
     getProsjekter, getProsjektById, saveProsjekt, deleteProsjekt,
-    getProsjektUtstyr, addProsjektUtstyr, removeProsjektUtstyr,
+    getProsjektUtstyr, addProsjektUtstyr, removeProsjektUtstyr, setProsjektUtstyrKommentar,
   };
 
 })();

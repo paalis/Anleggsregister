@@ -825,10 +825,16 @@ async function renderProsjektUtstyrTab() {
       const label = enhet ? (enhet.asset_id || '#' + enhet.enhet_nr) : 'Ukjent';
       return `<span class="enhet-badge removable-badge" onclick="fjernProsjektUtstyr(${l.id})" title="Fjern ${label}">${label} ×</span>`;
     }).join('');
-    return `<div class="inline-logg-item">
+    const kommentar = (gruppeLinjer.find(l => l.kommentar)?.kommentar || '').replace(/"/g, '&quot;');
+    return `<div class="inline-logg-item prosjekt-utstyr-gruppe">
       <span class="inline-logg-text">${item ? fullNavn(item) : 'Ukjent utstyr'} <span style="color:var(--muted)">× ${gruppeLinjer.length}</span> ${badges}</span>
+      <input type="text" class="prosjekt-utstyr-kommentar" placeholder="Kommentar (valgfritt)" value="${kommentar}" onchange="lagreProsjektUtstyrKommentar(${utstyrId}, this.value)">
     </div>`;
   }).join('');
+}
+
+async function lagreProsjektUtstyrKommentar(utstyrId, kommentar) {
+  await API.setProsjektUtstyrKommentar(editProsjektId, utstyrId, kommentar.trim());
 }
 
 // Kun ledige enheter (status OK) kan reserveres til et prosjekt.
