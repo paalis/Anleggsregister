@@ -441,13 +441,19 @@
         </div>
 
         <!-- Legg til ny enhet -->
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px">Legg til enhet</div>
-        <div class="form-grid">
-          <div class="form-group"><label>Lokasjon</label><input type="text" id="ne-lokasjon" placeholder="f.eks. Selbu"></div>
-          <div class="form-group"><label>Serienummer (valgfritt)</label><input type="text" id="ne-serienummer" placeholder="SN-001"></div>
-          <div class="form-group form-full"><label>Kommentar (valgfritt)</label><input type="text" id="ne-kommentar" placeholder="f.eks. koffert A"></div>
+        <button class="btn btn-ghost" id="btn-vis-ny-enhet" onclick="visNyEnhetForm()">+ Legg til enhet</button>
+        <div id="ny-enhet-form" style="display:none;border:1px solid var(--accent2)44;border-radius:8px;padding:14px;background:var(--accent2)08">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent2);margin-bottom:10px">Legg til enhet</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Lokasjon</label><input type="text" id="ne-lokasjon" placeholder="f.eks. Selbu"></div>
+            <div class="form-group"><label>Serienummer (valgfritt)</label><input type="text" id="ne-serienummer" placeholder="SN-001"></div>
+            <div class="form-group form-full"><label>Kommentar (valgfritt)</label><input type="text" id="ne-kommentar" placeholder="f.eks. koffert A"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-accent" style="font-size:0.72rem;padding:8px 14px" onclick="leggTilEnhet()">Lagre</button>
+            <button class="btn btn-ghost"  style="font-size:0.72rem;padding:8px 14px" onclick="skjulNyEnhetForm()">Avbryt</button>
+          </div>
         </div>
-        <button class="btn btn-ghost" style="margin-top:8px" onclick="leggTilEnhet()">+ Legg til enhet</button>
       </div>
       <div class="modal-tab-content" id="tab-logg">
         <div class="inline-logg" id="item-logg-list"></div>

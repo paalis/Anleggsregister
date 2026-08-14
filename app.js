@@ -342,6 +342,19 @@ async function renderItemEnheter() {
   }
 }
 
+function visNyEnhetForm() {
+  $('btn-vis-ny-enhet').style.display = 'none';
+  $('ny-enhet-form').style.display = 'block';
+}
+
+function skjulNyEnhetForm() {
+  $('ny-enhet-form').style.display = 'none';
+  $('btn-vis-ny-enhet').style.display = 'inline-block';
+  $('ne-lokasjon').value    = '';
+  $('ne-serienummer').value = '';
+  $('ne-kommentar').value   = '';
+}
+
 async function leggTilEnhet() {
   if (editId === null) { showToast('Lagre utstyret først.', 'error'); return; }
   const nr = await API.getNextEnhetNr(editId);
@@ -352,9 +365,7 @@ async function leggTilEnhet() {
     serienummer: $('ne-serienummer').value.trim(),
     kommentar:   $('ne-kommentar').value.trim(),
   });
-  $('ne-lokasjon').value    = '';
-  $('ne-serienummer').value = '';
-  $('ne-kommentar').value   = '';
+  skjulNyEnhetForm();
   await renderItemEnheter();
 }
 
