@@ -11,20 +11,20 @@ create table utstyr (
   vare          text not null,
   kvantitet     integer not null default 1,
   kommentar     text,
-  innkjopspris  numeric,
-  innkjopsdato  date,
   opprettet     timestamptz default now()
 );
 
 -- ENHETER (individuelle fysiske enheter av et utstyr)
 create table enheter (
-  id          bigint primary key generated always as identity,
-  utstyr_id   bigint references utstyr(id) on delete cascade,
-  enhet_nr    integer not null,
-  serienummer text,
-  status      text not null default 'OK',
-  kommentar   text,
-  opprettet   timestamptz default now()
+  id           bigint primary key generated always as identity,
+  utstyr_id    bigint references utstyr(id) on delete cascade,
+  enhet_nr     integer not null,
+  serienummer  text,
+  status       text not null default 'OK',
+  kommentar    text,
+  innkjopspris numeric,
+  innkjopsdato date,
+  opprettet    timestamptz default now()
 );
 
 -- UTLÅN (alltid knyttet til en spesifikk enhet)
@@ -155,4 +155,8 @@ create policy "Alle kan lese og skrive prosjekt_utstyr" on prosjekt_utstyr for a
 -- alter table utlaan alter column enhet_id set not null;
 -- alter table utlaan drop column antall;
 -- alter table utstyr drop column if exists status;
+-- alter table enheter add column innkjopspris numeric; -- innkjøpspris/-dato flyttet til enheter
+-- alter table enheter add column innkjopsdato date;
+-- alter table utstyr drop column if exists innkjopspris;
+-- alter table utstyr drop column if exists innkjopsdato;
 -- ============================================================

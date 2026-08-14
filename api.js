@@ -38,8 +38,6 @@ const API = (() => {
     const row = {
       kategori: item.kategori, merke: item.merke || null, vare: item.vare,
       kommentar: item.kommentar,
-      innkjopspris: item.innkjopspris || null,
-      innkjopsdato: item.innkjopsdato || null,
     };
     if (item.id != null) {
       const { data, error } = await sb.from('utstyr').update(row).eq('id', item.id).select().single();
@@ -98,6 +96,8 @@ const API = (() => {
       status:      entry.status || 'OK',
       kommentar:   entry.kommentar || null,
       lokasjon:    entry.lokasjon || null,
+      innkjopspris: entry.innkjopspris || null,
+      innkjopsdato: entry.innkjopsdato || null,
     };
     if (entry.id != null) {
       const { data, error } = await sb.from('enheter').update(row).eq('id', entry.id).select().single();

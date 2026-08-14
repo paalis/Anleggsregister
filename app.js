@@ -152,8 +152,6 @@ async function render() {
           <td data-label="Merke">${r.merke || '—'}</td>
           <td data-label="Modell">${r.vare || '—'}</td>
           <td data-label="Ant."><span class="qty-badge">${r.kvantitet}</span></td>
-          <td data-label="Pris (NOK)" style="color:var(--muted);font-size:0.78rem">${r.innkjopspris ? Number(r.innkjopspris).toLocaleString('nb-NO') : '—'}</td>
-          <td data-label="Dato" style="color:var(--muted);font-size:0.78rem">${r.innkjopsdato || '—'}</td>
           <td data-label="Kommentar" style="color:var(--muted);font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.kommentar || ''}</td>
         </tr>`).join('');
     }
@@ -184,7 +182,7 @@ async function populateFilters(all) {
   fk.value = ck; fm.value = cm;
 }
 
-const SORT_COLS = ['kategori','merke','vare','kvantitet','innkjopspris','innkjopsdato'];
+const SORT_COLS = ['kategori','merke','vare','kvantitet'];
 
 function sortBy(col) {
   if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
@@ -229,8 +227,6 @@ async function openItemModal(id, tab = 'tab-info') {
   $('f-vare').value        = r?.vare         ?? '';
   $('f-kvantitet').textContent = r?.kvantitet ?? 0;
   $('f-kommentar').value   = r?.kommentar    ?? '';
-  $('f-pris').value        = r?.innkjopspris ?? '';
-  $('f-dato').value        = r?.innkjopsdato ?? '';
 
   if (tab === 'tab-enheter') await renderItemEnheter();
   if (tab === 'tab-logg')    await renderItemLogg();
@@ -249,8 +245,6 @@ async function saveItem() {
     merke:        $('f-merke').value.trim(),
     vare,
     kommentar:    $('f-kommentar').value.trim(),
-    innkjopspris: $('f-pris').value,
-    innkjopsdato: $('f-dato').value,
   });
 
   closeModal('item-modal-overlay');
@@ -380,6 +374,8 @@ async function redigerEnhet(id) {
   $('ee-serienummer').value            = e.serienummer || '';
   $('ee-kommentar').value              = e.kommentar   || '';
   $('ee-status').value                 = e.status      || 'OK';
+  $('ee-pris').value                   = e.innkjopspris ?? '';
+  $('ee-dato').value                   = e.innkjopsdato ?? '';
   $('enhet-edit-form').style.display = 'block';
   $('enhet-edit-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -396,6 +392,8 @@ async function lagreEnhetRedigering() {
     serienummer: $('ee-serienummer').value.trim(),
     kommentar:   $('ee-kommentar').value.trim(),
     status:      $('ee-status').value,
+    innkjopspris: $('ee-pris').value,
+    innkjopsdato: $('ee-dato').value,
   });
   editEnhetId = null;
   $('enhet-edit-form').style.display = 'none';
@@ -875,11 +873,11 @@ async function deleteProsjekt() {
 // ── CSV-eksport ───────────────────────────────────────────────
 async function exportCSV() {
   const rows    = await getFiltered();
-  const headers = ['Kategori','Merke','Modell','Kvantitet','Innkjøpspris','Innkjøpsdato','Kommentar'];
+  const headers = ['Kategori','Merke','Modell','Kvantitet','Kommentar'];
   const lines   = [
     headers.join(';'),
     ...rows.map(r =>
-      [r.kategori,r.merke,r.vare,r.kvantitet,r.innkjopspris,r.innkjopsdato,r.kommentar]
+      [r.kategori,r.merke,r.vare,r.kvantitet,r.kommentar]
         .map(v => `"${(v || '').toString().replace(/"/g, '""')}"`)
         .join(';')
     ),

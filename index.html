@@ -342,8 +342,6 @@
       <option value="merke">Sorter: Merke</option>
       <option value="vare">Sorter: Modell</option>
       <option value="kvantitet">Sorter: Antall</option>
-      <option value="innkjopspris">Sorter: Pris</option>
-      <option value="innkjopsdato">Sorter: Dato</option>
     </select>
     <button class="btn btn-accent" onclick="openItemModal(null)">+ Legg til</button>
     <button class="btn btn-ghost" onclick="exportCSV()">Eksport CSV</button>
@@ -355,8 +353,6 @@
         <th onclick="sortBy('merke')">Merke</th>
         <th onclick="sortBy('vare')">Modell</th>
         <th onclick="sortBy('kvantitet')">Ant.</th>
-        <th onclick="sortBy('innkjopspris')">Pris (NOK)</th>
-        <th onclick="sortBy('innkjopsdato')">Dato</th>
         <th>Kommentar</th>
       </tr></thead>
       <tbody id="table-body"></tbody>
@@ -414,8 +410,6 @@
           <div class="form-group form-full"><label>Merke</label><input type="text" id="f-merke" placeholder="f.eks. Shure"></div>
           <div class="form-group form-full"><label>Modellnavn *</label><input type="text" id="f-vare" placeholder="f.eks. SM58"></div>
           <div class="form-group"><label>Antall enheter</label><div style="padding:10px 0;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:var(--accent2)" id="f-kvantitet">—</div></div>
-          <div class="form-group"><label>Innkjøpspris (NOK)</label><input type="number" id="f-pris" min="0" placeholder="0"></div>
-          <div class="form-group"><label>Innkjøpsdato</label><input type="date" id="f-dato"></div>
           <div class="form-group form-full"><label>Kommentar</label><textarea id="f-kommentar" rows="2" placeholder="Ekstra informasjon..."></textarea></div>
         </div>
       </div>
@@ -432,6 +426,8 @@
               <select id="ee-status"><option>OK</option><option>Reservert</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
             <div class="form-group"><label>Lokasjon</label><input type="text" id="ee-lokasjon" placeholder="f.eks. Selbu"></div>
             <div class="form-group"><label>Serienummer (produsentens SN)</label><input type="text" id="ee-serienummer" placeholder="f.eks. 3B7X92"></div>
+            <div class="form-group"><label>Innkjøpspris (NOK)</label><input type="number" id="ee-pris" min="0" placeholder="0"></div>
+            <div class="form-group"><label>Innkjøpsdato</label><input type="date" id="ee-dato"></div>
             <div class="form-group form-full"><label>Kommentar</label><input type="text" id="ee-kommentar" placeholder="f.eks. koffert A"></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
