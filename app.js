@@ -791,15 +791,29 @@ async function renderProsjektUtstyrTab() {
     return;
   }
   const utstyrMap = Object.fromEntries(utstyr.map(r => [r.id, r]));
-  el.innerHTML = (await Promise.all(linjer.map(async l => {
-    const item  = utstyrMap[l.utstyrId];
-    const enhet = await API.getEnhetById(l.enhetId);
-    const enhetLabel = enhet ? (enhet.asset_id || '#' + enhet.enhet_nr) : 'Ukjent enhet';
+  const enheterMap = Object.fromEntries(
+    (await Promise.all(linjer.map(l => API.getEnhetById(l.enhetId)))).map(e => [e.id, e])
+  );
+
+  // Slå sammen linjer per varemodell: "Vare × antall" med hver enkelt
+  // reservert enhet som en egen fjernbar merkelapp på slutten av linjen.
+  const grupper = new Map();
+  for (const l of linjer) {
+    if (!grupper.has(l.utstyrId)) grupper.set(l.utstyrId, []);
+    grupper.get(l.utstyrId).push(l);
+  }
+
+  el.innerHTML = [...grupper.entries()].map(([utstyrId, gruppeLinjer]) => {
+    const item = utstyrMap[utstyrId];
+    const badges = gruppeLinjer.map(l => {
+      const enhet = enheterMap[l.enhetId];
+      const label = enhet ? (enhet.asset_id || '#' + enhet.enhet_nr) : 'Ukjent';
+      return `<span class="enhet-badge removable-badge" onclick="fjernProsjektUtstyr(${l.id})" title="Fjern ${label}">${label} ×</span>`;
+    }).join('');
     return `<div class="inline-logg-item">
-      <span class="inline-logg-text">${item ? fullNavn(item) : 'Ukjent utstyr'} <span style="color:var(--muted)">— ${enhetLabel}</span></span>
-      <button class="logg-del-btn" onclick="fjernProsjektUtstyr(${l.id})">×</button>
+      <span class="inline-logg-text">${item ? fullNavn(item) : 'Ukjent utstyr'} <span style="color:var(--muted)">× ${gruppeLinjer.length}</span> ${badges}</span>
     </div>`;
-  }))).join('');
+  }).join('');
 }
 
 // Kun ledige enheter (status OK) kan reserveres til et prosjekt.
