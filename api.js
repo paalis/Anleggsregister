@@ -15,7 +15,12 @@ const FALLBACK_KEY = 'sb_publishable_cI4_LoUOOQG8B36Z98Y2TQ_y3INe4Hr';
 // En plassholder som ikke ble erstattet av build.js teller som "ikke satt".
 const fraEnv = v => (v && !v.startsWith('%%') ? v : null);
 
-const SUPABASE_URL = fraEnv(window.ENV?.SUPABASE_URL) || FALLBACK_URL;
+// Supabase-klienten vil ha prosjektets rot-URL og legger selv på /rest/v1.
+// Miljøvariabelen i Vercel har hatt med stien ("…supabase.co/rest/v1/"),
+// som ga doble stier og feilende kall — derfor klipper vi til origin.
+const rotUrl = u => { try { return new URL(u).origin; } catch { return u; } };
+
+const SUPABASE_URL = rotUrl(fraEnv(window.ENV?.SUPABASE_URL) || FALLBACK_URL);
 const SUPABASE_KEY = fraEnv(window.ENV?.SUPABASE_KEY) || FALLBACK_KEY;
 
 // Faste, unike prefikser per kategori for asset-ID (unngår kollisjon
