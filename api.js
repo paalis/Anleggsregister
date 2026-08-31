@@ -1,12 +1,22 @@
 /**
  * api.js — Supabase-versjon
  *
- * Lim inn dine Supabase-verdier nedenfor.
- * For intern bruk er dette trygt nok.
+ * Tilkoblingen hentes fra window.ENV, som build.js fyller med
+ * miljøvariablene SUPABASE_URL/SUPABASE_KEY fra Vercel. Er de ikke satt
+ * (f.eks. når siden kjøres lokalt uten byggesteget) står plassholderne
+ * igjen urørt, og verdiene nedenfor brukes i stedet. Nøkkelen er en
+ * publishable key som uansett er synlig i nettleseren — tilgangen
+ * styres av RLS-policyene i databasen.
  */
 
-const SUPABASE_URL = 'https://wocbanyacwklsgemjcnx.supabase.co'; // <- din URL
-const SUPABASE_KEY = 'sb_publishable_cI4_LoUOOQG8B36Z98Y2TQ_y3INe4Hr';                  // <- din publishable key
+const FALLBACK_URL = 'https://wocbanyacwklsgemjcnx.supabase.co';
+const FALLBACK_KEY = 'sb_publishable_cI4_LoUOOQG8B36Z98Y2TQ_y3INe4Hr';
+
+// En plassholder som ikke ble erstattet av build.js teller som "ikke satt".
+const fraEnv = v => (v && !v.startsWith('%%') ? v : null);
+
+const SUPABASE_URL = fraEnv(window.ENV?.SUPABASE_URL) || FALLBACK_URL;
+const SUPABASE_KEY = fraEnv(window.ENV?.SUPABASE_KEY) || FALLBACK_KEY;
 
 // Faste, unike prefikser per kategori for asset-ID (unngår kollisjon
 // mellom kategorier som ellers ville fått samme 2-bokstavsforkortelse,
