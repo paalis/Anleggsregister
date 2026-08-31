@@ -76,11 +76,23 @@ function splashStatus(tekst) {
   if (el) el.textContent = tekst;
 }
 
-function splashFeil(tekst) {
+function splashFeil(tekst, detalj) {
   const el = $('splash');
   if (!el) return;
   el.classList.add('error');
   splashStatus(tekst);
+  const d = $('splash-detalj');
+  if (d && detalj) { d.textContent = detalj; d.hidden = false; }
+}
+
+// Selve feilen fra Supabase, pluss URL-en som ble brukt. Uten dette sier
+// skjermen bare "fikk ikke kontakt", og feil oppsett (gal SUPABASE_URL
+// eller nøkkel) ser likt ut som at databasen er nede.
+function feilDetalj(err) {
+  const melding = err?.message || String(err);
+  const kode    = err?.code ? ` (${err.code})` : '';
+  const url     = typeof SUPABASE_URL === 'string' ? SUPABASE_URL : '';
+  return `${melding}${kode}${url ? `\n${url}` : ''}`;
 }
 
 function fullNavn(r) { return r?.merke ? `${r.merke} ${r.vare}` : (r?.vare ?? ''); }
@@ -1001,7 +1013,7 @@ async function initApp() {
     await render();
   } catch (err) {
     console.error('Oppstart feilet:', err);
-    splashFeil('Fikk ikke kontakt med databasen — last siden på nytt.');
+    splashFeil('Fikk ikke kontakt med databasen — last siden på nytt.', feilDetalj(err));
     return;
   } finally {
     clearTimeout(tregTimer);

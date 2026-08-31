@@ -15,6 +15,20 @@ const key = process.env.SUPABASE_KEY;
 const filePath = path.join(__dirname, 'index.html');
 let html = fs.readFileSync(filePath, 'utf8');
 
+// Supabase-klienten vil ha prosjektets rot-URL ("https://xxx.supabase.co")
+// og legger på /rest/v1 selv. api.js klipper vekk en eventuell sti, men da
+// står feil verdi igjen i Vercel — så vi sier fra her.
+if (url) {
+  try {
+    const u = new URL(url);
+    if (u.pathname !== '/' || u.search) {
+      console.warn(`⚠️   SUPABASE_URL har med en sti ("${url}"). Bruk bare "${u.origin}" — api.js klipper den for nå.`);
+    }
+  } catch {
+    console.warn(`⚠️   SUPABASE_URL er ikke en gyldig URL ("${url}").`);
+  }
+}
+
 if (url) html = html.replace('%%SUPABASE_URL%%', url);
 if (key) html = html.replace('%%SUPABASE_KEY%%', key);
 

@@ -199,6 +199,13 @@
     font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase;
     color: var(--muted); text-align: center; padding: 0 24px;
   }
+  /* Selve feilteksten fra Supabase — vises som den er (ikke versaler),
+     så en gal URL eller nøkkel kan leses rett av skjermen. */
+  .splash-detalj {
+    margin-top: -12px; font-size: 0.7rem; line-height: 1.6; color: var(--muted);
+    text-align: center; padding: 0 24px; max-width: 90vw;
+    white-space: pre-line; overflow-wrap: anywhere;
+  }
 
   /* Feiler oppstarten blir ringen stående stille og rød, i stedet for
      at man ser på en animasjon som aldri tar slutt. */
@@ -353,6 +360,7 @@
     <text class="splash-txt splash-word" x="122" y="54">rs as</text>
   </svg>
   <p class="splash-status" id="splash-status">Laster register…</p>
+  <p class="splash-detalj" id="splash-detalj" hidden></p>
 </div>
 <script>
   // Logoens viewBox har luft til høyre for teksten (den er venstrestilt i
