@@ -56,6 +56,33 @@ let loadingCount = 0;
 function showLoading() { loadingCount++; $('loading-bar').classList.add('active'); }
 function hideLoading() { loadingCount = Math.max(0, loadingCount - 1); if (loadingCount === 0) $('loading-bar').classList.remove('active'); }
 
+// ── Oppstartsskjerm ──────────────────────────────────────────
+// Splash-skjermen (logoen med roterende o-ring) står til første
+// datainnlasting er ferdig. Minstetiden gjør at den ikke blinker
+// forbi når dataene kommer med én gang.
+const splashStart = Date.now();
+
+function hideSplash() {
+  const el = $('splash');
+  if (!el) return;
+  setTimeout(() => {
+    el.classList.add('hidden');
+    setTimeout(() => el.remove(), 500);
+  }, Math.max(0, 600 - (Date.now() - splashStart)));
+}
+
+function splashStatus(tekst) {
+  const el = $('splash-status');
+  if (el) el.textContent = tekst;
+}
+
+function splashFeil(tekst) {
+  const el = $('splash');
+  if (!el) return;
+  el.classList.add('error');
+  splashStatus(tekst);
+}
+
 function fullNavn(r) { return r?.merke ? `${r.merke} ${r.vare}` : (r?.vare ?? ''); }
 
 function statusDot(s) {
@@ -957,14 +984,30 @@ async function exportCSV() {
 
 // ── Oppstart ──────────────────────────────────────────────────
 async function initApp() {
-  await API.init();
+  // Sier fra hvis databasen ikke svarer (f.eks. et pauset Supabase-
+  // prosjekt), slik at man ikke blir stående foran en animasjon uten
+  // å vite hva som skjer.
+  const tregTimer = setTimeout(
+    () => splashStatus('Databasen bruker uvanlig lang tid…'), 8000);
 
-  ['search','filter-kat','filter-merke'].forEach(id =>
-    $(id).addEventListener('input', render)
-  );
-  $('nl-dato').value = today();
+  try {
+    await API.init();
 
-  await render();
+    ['search','filter-kat','filter-merke'].forEach(id =>
+      $(id).addEventListener('input', render)
+    );
+    $('nl-dato').value = today();
+
+    await render();
+  } catch (err) {
+    console.error('Oppstart feilet:', err);
+    splashFeil('Fikk ikke kontakt med databasen — last siden på nytt.');
+    return;
+  } finally {
+    clearTimeout(tregTimer);
+  }
+
+  hideSplash();
 }
 
 initApp();

@@ -179,6 +179,52 @@
   }
   @keyframes loading-slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
 
+  /* ── Oppstartsskjerm ──────────────────────────────────────────
+     Ringen i logoens o gjøres om til spinner mens dataene hentes. */
+  #splash {
+    position: fixed; inset: 0; z-index: 5000; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
+    transition: opacity 0.45s ease, visibility 0.45s ease;
+  }
+  #splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .splash-logo { width: min(300px, 66vw); height: auto; overflow: visible; }
+  .splash-txt { font-family: 'Trebuchet MS', Arial, sans-serif; font-size: 58px; font-weight: 300; fill: #b8bcc8; }
+  .splash-word { opacity: 0; animation: splash-in 0.7s ease-out 0.15s forwards; }
+  .splash-track { opacity: 0.14; }
+  .splash-arc, .splash-dot, .splash-ping { transform-box: fill-box; transform-origin: center; }
+  .splash-arc  { animation: splash-spin 1.9s linear infinite, splash-dash 1.6s ease-in-out infinite; }
+  .splash-dot  { animation: splash-pulse 1.6s ease-in-out infinite; }
+  .splash-ping { opacity: 0; animation: splash-ping 1.9s ease-out infinite; }
+  .splash-status {
+    font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--muted); text-align: center; padding: 0 24px;
+  }
+
+  /* Feiler oppstarten blir ringen stående stille og rød, i stedet for
+     at man ser på en animasjon som aldri tar slutt. */
+  #splash.error .splash-arc   { animation: none; stroke: var(--danger); stroke-dasharray: none; }
+  #splash.error .splash-track { stroke: var(--danger); }
+  #splash.error .splash-dot   { animation: none; fill: var(--danger); }
+  #splash.error .splash-ping  { animation: none; }
+  #splash.error .splash-status { color: var(--danger); }
+
+  @keyframes splash-in   { to { opacity: 1; } }
+  @keyframes splash-spin { to { transform: rotate(360deg); } }
+  @keyframes splash-dash {
+    0%   { stroke-dasharray: 2 92;  stroke-dashoffset: 0; }
+    50%  { stroke-dasharray: 56 38; stroke-dashoffset: -14; }
+    100% { stroke-dasharray: 2 92;  stroke-dashoffset: -94; }
+  }
+  @keyframes splash-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.5); opacity: 0.45; } }
+  @keyframes splash-ping  { 0% { transform: scale(1); opacity: 0.5; } 70%, 100% { transform: scale(2.3); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .splash-word { animation: none; opacity: 1; }
+    .splash-arc  { animation: none; stroke-dasharray: none; }
+    .splash-dot  { animation: none; }
+    .splash-ping { animation: none; opacity: 0; }
+  }
+
   .toast-container {
     position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
     z-index: 3000; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none;
@@ -295,6 +341,34 @@
 </style>
 </head>
 <body>
+
+<!-- Oppstartsskjerm — står til første datainnlasting er ferdig. -->
+<div id="splash">
+  <svg class="splash-logo" viewBox="0 0 390 66" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Laster Petors AS utstyrsregister">
+    <text class="splash-txt splash-word" x="0" y="54">Pet</text>
+    <circle class="splash-ping"  cx="104" cy="39" r="15" fill="none" stroke="#47b8ff" stroke-width="2"/>
+    <circle class="splash-track" cx="104" cy="39" r="15" fill="none" stroke="#47b8ff" stroke-width="5"/>
+    <circle class="splash-arc"   cx="104" cy="39" r="15" fill="none" stroke="#47b8ff" stroke-width="5" stroke-linecap="round"/>
+    <circle class="splash-dot"   cx="104" cy="39" r="5"  fill="#47b8ff"/>
+    <text class="splash-txt splash-word" x="122" y="54">rs as</text>
+  </svg>
+  <p class="splash-status" id="splash-status">Laster register…</p>
+</div>
+<script>
+  // Logoens viewBox har luft til høyre for teksten (den er venstrestilt i
+  // toppen av siden). På splash-skjermen er logoen sentrert, så vi klipper
+  // viewBoxen til selve teksten — ellers står logoen synlig ute av senter.
+  (function () {
+    try {
+      const svg  = document.querySelector('.splash-logo');
+      // Bare tekstene måles — sirklene animeres, så bredden deres varierer.
+      const bbs  = [...svg.querySelectorAll('.splash-txt')].map(t => t.getBBox());
+      const x0   = Math.min(...bbs.map(b => b.x));
+      const x1   = Math.max(...bbs.map(b => b.x + b.width));
+      svg.setAttribute('viewBox', `${x0 - 4} 0 ${x1 - x0 + 8} 66`);
+    } catch (e) { /* beholder standard viewBox */ }
+  })();
+</script>
 
 <div id="loading-bar"></div>
 <div class="toast-container" id="toast-container"></div>
