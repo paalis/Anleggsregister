@@ -15,6 +15,9 @@
 <meta name="apple-mobile-web-app-title" content="Utstyrsregister">
 
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Skanning av QR-koder på pakklista. Lastes den ikke, faller pakklista
+     tilbake på manuell inntasting av asset-ID. -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -168,6 +171,49 @@
   .enhet-badge { display: inline-block; font-size: 0.65rem; padding: 2px 7px; border-radius: 100px; border: 1px solid var(--accent2)44; background: var(--accent2)11; color: var(--accent2); vertical-align: middle; margin-left: 4px; }
   .removable-badge { cursor: pointer; transition: all 0.15s; }
   .removable-badge:hover { border-color: var(--danger)44; background: var(--danger)11; color: var(--danger); }
+
+  .felt-hint { font-size: 0.68rem; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+
+  .varsel { font-size: 0.74rem; line-height: 1.5; padding: 10px 12px; border-radius: 8px; margin-bottom: 12px;
+            border: 1px solid var(--accent2)44; background: var(--accent2)11; color: var(--accent2); }
+  .varsel-feil { border-color: var(--danger)44; background: var(--danger)11; color: var(--danger); }
+
+  .utlaan-card-historikk { opacity: 0.6; }
+  .utlaan-badge.returnert { background: transparent; color: var(--muted); border-color: var(--border); }
+
+  /* ── Pakkliste ────────────────────────────────────────────── */
+  .pakk-topp { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .pakk-fremdrift { font-size: 0.78rem; color: var(--muted); }
+  .pakk-fremdrift strong { font-family: 'Syne', sans-serif; font-size: 1.05rem; color: var(--accent); }
+  .pakk-retning { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .pakk-retning-btn { font-family: 'Syne', sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 9px 14px; min-height: 40px; border: none; background: transparent;
+      color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .pakk-retning-btn:hover { color: var(--text); }
+  .pakk-retning-btn.valgt { background: var(--accent); color: #0d0f14; }
+
+  .pakk-skann { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  input.skann-felt { flex: 1; padding-left: 14px; text-transform: uppercase; }
+  .skann-boks { display: none; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #000; }
+  #skann-video { width: 100%; }
+  #skann-video video { width: 100% !important; display: block; }
+  .skann-status { font-size: 0.75rem; padding: 10px 12px; min-height: 38px; text-align: center;
+                  color: var(--muted); background: var(--surface2); }
+  .skann-status.ok   { color: var(--ok); }
+  .skann-status.feil { color: var(--danger); }
+
+  .pakk-liste { max-height: 320px; }
+  .pakk-rad { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+  .pakk-rad:last-child { border-bottom: none; }
+  .pakk-ferdig .pakk-id, .pakk-ferdig .pakk-navn { opacity: 0.45; }
+  .pakk-id { font-family: 'Syne', sans-serif; font-weight: 700; color: var(--accent2); min-width: 72px; flex-shrink: 0; }
+  .pakk-navn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pakk-kommentar { color: var(--muted); font-style: italic; }
+  .pakk-boks { font-family: 'Syne', sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em;
+      min-width: 44px; min-height: 34px; border-radius: 6px; cursor: pointer; flex-shrink: 0;
+      border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all 0.15s; }
+  .pakk-boks:hover { border-color: var(--accent); color: var(--accent); }
+  .pakk-boks.av { background: var(--ok); border-color: var(--ok); color: #0d0f14; }
 
   .section-header { padding: 20px 40px 0; display: flex; justify-content: space-between; align-items: center; }
   .section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
@@ -323,6 +369,13 @@
     /* Sortering skjer via egen dropdown når kolonneoverskriftene er skjult */
     .mobile-sort-select { display: block; grid-column: 1 / -1; }
 
+    /* Pakklista brukes stort sett på mobil ute på oppdrag */
+    .pakk-topp { gap: 10px; }
+    .pakk-retning { width: 100%; }
+    .pakk-retning-btn { flex: 1; }
+    .pakk-id { min-width: 62px; }
+    .pakk-navn { white-space: normal; }
+
     /* Kortvisning av tabellen i stedet for horisontal scroll */
     .table-wrap { overflow-x: visible; }
     table, thead, tbody, tr, td { display: block; }
@@ -465,7 +518,10 @@
 <div class="view" id="view-utlaan">
   <div class="section-header">
     <span class="section-title">Aktive utlån</span>
-    <button class="btn btn-purple" onclick="openUtlaanModal(null)">+ Registrer utlån</button>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" id="btn-vis-returnerte" onclick="toggleReturnerte()">Vis returnerte</button>
+      <button class="btn btn-purple" onclick="openUtlaanModal(null)">+ Registrer utlån</button>
+    </div>
   </div>
   <div class="utlaan-grid" id="utlaan-grid"></div>
 </div>
@@ -513,8 +569,10 @@
           <div class="form-grid">
             <div class="form-group"><label>Asset-ID</label>
               <div id="ee-asset-id-display" style="padding:10px 12px;border:1px solid var(--border);border-radius:6px;color:var(--accent2);font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem">—</div></div>
-            <div class="form-group"><label>Status</label>
-              <select id="ee-status"><option>OK</option><option>Reservert</option><option>Utlånt</option><option>Service</option><option>Utgått</option></select></div>
+            <!-- Status er enhetens fysiske tilstand. Om den er ledig eller
+                 booket avgjøres av datoene i utlån og prosjekter. -->
+            <div class="form-group"><label>Tilstand</label>
+              <select id="ee-status"><option>OK</option><option>Service</option><option>Utgått</option></select></div>
             <div class="form-group"><label>Lokasjon</label><input type="text" id="ee-lokasjon" placeholder="f.eks. Selbu"></div>
             <div class="form-group"><label>Serienummer (produsentens SN)</label><input type="text" id="ee-serienummer" placeholder="f.eks. 3B7X92"></div>
             <div class="form-group"><label>Innkjøpspris (NOK)</label><input type="number" id="ee-pris" min="0" placeholder="0"></div>
@@ -584,8 +642,9 @@
     </div>
     <div class="modal-body">
       <div class="modal-tabs">
-        <button class="modal-tab active" onclick="switchModalTab('ptab-info',this)">Info</button>
-        <button class="modal-tab" onclick="switchModalTab('ptab-utstyr',this)">Utstyr</button>
+        <button class="modal-tab active" data-tab="ptab-info" onclick="switchModalTab('ptab-info',this)">Info</button>
+        <button class="modal-tab" data-tab="ptab-utstyr" onclick="switchModalTab('ptab-utstyr',this)">Utstyr</button>
+        <button class="modal-tab" data-tab="ptab-pakkliste" onclick="switchModalTab('ptab-pakkliste',this)">Pakkliste</button>
       </div>
       <div class="modal-tab-content active" id="ptab-info">
         <div class="form-grid">
@@ -600,15 +659,43 @@
         </div>
       </div>
       <div class="modal-tab-content" id="ptab-utstyr">
+        <div id="prosjekt-konflikt-varsel"></div>
         <div class="inline-logg" id="prosjekt-utstyr-list"></div>
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin:14px 0 8px">Legg til utstyr</div>
         <div class="form-grid">
           <div class="form-group form-full"><label>Utstyr</label>
             <select id="pu-utstyr" onchange="oppdaterProsjektEnhetSelect(this.value)"></select></div>
           <div class="form-group form-full"><label>Enhet</label>
-            <select id="pu-enhet"></select></div>
+            <select id="pu-enhet"></select>
+            <div class="felt-hint">Ledig vurderes mot prosjektets lagrede datoer.</div></div>
         </div>
         <button class="btn btn-ghost" style="margin-top:8px" onclick="leggTilProsjektUtstyr()">+ Legg til</button>
+      </div>
+
+      <!-- Pakkliste: avkryssing av hva som faktisk er lastet ut og kommet
+           tilbake, for hånd eller ved skanning av QR-koden på enheten. -->
+      <div class="modal-tab-content" id="ptab-pakkliste">
+        <div class="pakk-topp">
+          <div class="pakk-fremdrift" id="pakkliste-fremdrift"></div>
+          <div class="pakk-retning">
+            <button class="pakk-retning-btn valgt" data-retning="ut"  onclick="settPakkeRetning('ut')">Pakking ut</button>
+            <button class="pakk-retning-btn"       data-retning="inn" onclick="settPakkeRetning('inn')">Retur inn</button>
+          </div>
+        </div>
+
+        <div class="pakk-skann">
+          <button class="btn btn-accent" id="btn-skann" style="font-size:0.72rem;padding:9px 14px" onclick="toggleSkanning()">Skann</button>
+          <input type="text" id="skann-manuelt" class="skann-felt" placeholder="Asset-ID → kryss ut"
+                 autocomplete="off" autocapitalize="characters" spellcheck="false"
+                 onkeydown="if (event.key === 'Enter') { event.preventDefault(); skannManuelt(this); }">
+        </div>
+        <div class="skann-boks" id="skann-boks">
+          <div id="skann-video"></div>
+          <div class="skann-status" id="skann-status"></div>
+        </div>
+
+        <div class="inline-logg pakk-liste" id="pakkliste-innhold"></div>
+        <button class="btn btn-ghost" style="margin-top:12px;font-size:0.72rem;padding:8px 14px" onclick="skrivUtPakkliste()">Skriv ut</button>
       </div>
     </div>
     <div class="modal-footer">
@@ -629,12 +716,15 @@
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group form-full"><label>Utstyr *</label>
-          <select id="ul-utstyr" onchange="oppdaterEnhetSelect(this.value)"></select></div>
+          <select id="ul-utstyr" onchange="oppdaterUtlaanEnheter()"></select></div>
         <div class="form-group form-full"><label>Enhet *</label>
-          <select id="ul-enhet"></select></div>
+          <select id="ul-enhet"></select>
+          <div class="felt-hint">Enheter som er opptatt i perioden er avslått, med hvem som har dem.</div></div>
         <div class="form-group form-full"><label>Låntaker *</label><input type="text" id="ul-laantaker" placeholder="Navn / organisasjon"></div>
-        <div class="form-group"><label>Utlånsdato *</label><input type="date" id="ul-fra"></div>
-        <div class="form-group"><label>Forventet retur</label><input type="date" id="ul-til"></div>
+        <!-- Datoene avgjør hvilke enheter som er ledige, så lista bygges
+             på nytt når de endres. -->
+        <div class="form-group"><label>Utlånsdato *</label><input type="date" id="ul-fra" onchange="oppdaterUtlaanEnheter()"></div>
+        <div class="form-group"><label>Forventet retur</label><input type="date" id="ul-til" onchange="oppdaterUtlaanEnheter()"></div>
         <div class="form-group form-full"><label>Notat</label><textarea id="ul-notat" rows="2" placeholder="Arrangement, kontakt, etc."></textarea></div>
       </div>
     </div>

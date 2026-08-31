@@ -15,12 +15,18 @@ create table utstyr (
 );
 
 -- ENHETER (individuelle fysiske enheter av et utstyr)
+--
+-- status beskriver enhetens fysiske tilstand — ikke om den er booket.
+-- Om en enhet er ledig avgjøres av datoene i utlaan/prosjekt (se under),
+-- slik at samme enhet kan bookes til flere oppdrag som ikke overlapper.
 create table enheter (
   id           bigint primary key generated always as identity,
   utstyr_id    bigint references utstyr(id) on delete cascade,
   enhet_nr     integer not null,
+  asset_id     text unique,
   serienummer  text,
-  status       text not null default 'OK',
+  lokasjon     text,
+  status       text not null default 'OK' check (status in ('OK', 'Service', 'Utgått')),
   kommentar    text,
   innkjopspris numeric,
   innkjopsdato date,
@@ -28,6 +34,10 @@ create table enheter (
 );
 
 -- UTLÅN (alltid knyttet til en spesifikk enhet)
+--
+-- returnert er null så lenge utlånet løper. Et utlån båndlegger enheten
+-- fra fra→til; er til null, løper det til noen faktisk registrerer retur.
+-- Returnerte utlån blir stående som historikk og båndlegger ingenting.
 create table utlaan (
   id            bigint primary key generated always as identity,
   utstyr_id     bigint references utstyr(id) on delete cascade,
@@ -35,6 +45,7 @@ create table utlaan (
   laantaker     text not null,
   fra           date not null,
   til           date,
+  returnert     date,
   notat         text,
   opprettet     timestamptz default now()
 );
@@ -64,12 +75,21 @@ create table prosjekt (
 );
 
 -- Utstyr planlagt til et prosjekt (én rad per reservert enhet)
+--
+-- Reservasjonen båndlegger enheten i prosjektets periode (prosjekt.fra→til),
+-- men bare så lenge prosjektet er Planlagt eller Pågår. Fullførte og avlyste
+-- prosjekter frigir utstyret av seg selv — ingen status trenger å nullstilles.
+--
+-- pakket_ut/pakket_inn er pakklista: tidspunktet enheten faktisk ble lastet
+-- ut på oppdrag, og tidspunktet den kom tilbake på lager.
 create table prosjekt_utstyr (
   id          bigint primary key generated always as identity,
   prosjekt_id bigint references prosjekt(id) on delete cascade,
   utstyr_id   bigint references utstyr(id) on delete cascade,
   enhet_id    bigint not null references enheter(id) on delete cascade,
   kommentar   text,
+  pakket_ut   timestamptz,
+  pakket_inn  timestamptz,
   opprettet   timestamptz default now()
 );
 
@@ -135,7 +155,29 @@ create policy "Alle kan lese og skrive prosjekt"       on prosjekt       for all
 create policy "Alle kan lese og skrive prosjekt_utstyr" on prosjekt_utstyr for all using (true) with check (true);
 
 -- ============================================================
--- Migrering (kjør dette hvis du allerede har data i databasen):
+-- Migrering: datobasert booking + pakkliste
+--
+-- Kjør denne blokka mot en database som er satt opp etter det gamle
+-- skjemaet. Den er additiv — ingen data går tapt.
+-- ============================================================
+-- alter table utlaan          add column if not exists returnert  date;
+-- alter table prosjekt_utstyr add column if not exists pakket_ut  timestamptz;
+-- alter table prosjekt_utstyr add column if not exists pakket_inn timestamptz;
+--
+-- -- Tilgjengelighet regnes nå ut fra datoene i utlaan/prosjekt, så
+-- -- "Reservert"/"Utlånt" er ikke lenger gyldige tilstander på enheten.
+-- -- Enhetene det gjelder er fortsatt booket — bookingen ligger i
+-- -- utlaan/prosjekt_utstyr, som er det som nå styrer om de er ledige.
+-- update enheter set status = 'OK' where status in ('Reservert', 'Utlånt');
+-- alter table enheter add constraint enheter_status_check
+--   check (status in ('OK', 'Service', 'Utgått'));
+--
+-- -- Løpende utlån fra før har returnert = null og fortsetter å båndlegge
+-- -- enheten. Ryddes opp ved å registrere retur i appen som vanlig.
+-- ============================================================
+
+-- ============================================================
+-- Eldre migreringer (allerede kjørt):
 -- alter table utlaan add column if not exists antall   integer not null default 1;
 -- alter table utlaan add column if not exists enhet_id bigint references enheter(id) on delete set null;
 -- alter table utstyr add column if not exists merke    text;

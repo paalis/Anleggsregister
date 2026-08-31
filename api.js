@@ -96,9 +96,12 @@ const API = (() => {
     check(error, 'getAlleEnheter'); return data;
   }
 
-  async function getEnhetById(id) {
-    const { data, error } = await sb.from('enheter').select('*').eq('id', id).single();
-    check(error, 'getEnhetById'); return data;
+  // Oppslag på asset-ID (det som står i QR-koden) — brukes av skanneren.
+  // maybeSingle: en ukjent kode skal gi null, ikke en feil.
+  async function getEnhetByAssetId(assetId) {
+    const { data, error } = await sb.from('enheter').select('*')
+      .eq('asset_id', assetId.trim().toUpperCase()).maybeSingle();
+    check(error, 'getEnhetByAssetId'); return data;
   }
 
   async function getNextEnhetNr(utstyrId) {
@@ -150,15 +153,53 @@ const API = (() => {
     check(error, 'deleteEnhet');
   }
 
-  async function setEnhetStatus(id, status) {
-    const { error } = await sb.from('enheter').update({ status }).eq('id', id);
-    check(error, 'setEnhetStatus');
+  // ── Bookinger ────────────────────────────────────────────────
+  // Om en enhet er ledig avgjøres ikke lenger av et statusfelt, men av
+  // om noen booking overlapper perioden man spør om. En booking er enten
+  // et løpende utlån eller en reservasjon på et aktivt prosjekt.
+  //
+  // Et prosjekt uten sluttdato regnes som endagsoppdrag (til = fra).
+  // Et utlån uten sluttdato løper til retur registreres (til = null).
+
+  async function getBookinger() {
+    const [utlaanRes, prosjektRes, linjeRes] = await Promise.all([
+      sb.from('utlaan').select('id, utstyr_id, enhet_id, laantaker, fra, til').is('returnert', null),
+      sb.from('prosjekt').select('id, navn, fra, til').in('status', ['Planlagt', 'Pågår']),
+      sb.from('prosjekt_utstyr').select('id, prosjekt_id, utstyr_id, enhet_id'),
+    ]);
+    check(utlaanRes.error,   'getBookinger (utlån)');
+    check(prosjektRes.error, 'getBookinger (prosjekt)');
+    check(linjeRes.error,    'getBookinger (prosjektutstyr)');
+
+    const bookinger = utlaanRes.data.map(u => ({
+      kilde: 'utlaan', id: u.id,
+      enhetId: u.enhet_id, utstyrId: u.utstyr_id,
+      fra: u.fra, til: u.til, tittel: u.laantaker,
+    }));
+
+    // Linjer på fullførte/avlyste prosjekter er ikke med i prosjekt-oppslaget,
+    // og faller dermed ut av bookinglista — utstyret er automatisk frigitt.
+    const prosjekter = new Map(prosjektRes.data.map(p => [p.id, p]));
+    for (const l of linjeRes.data) {
+      const p = prosjekter.get(l.prosjekt_id);
+      if (!p) continue;
+      bookinger.push({
+        kilde: 'prosjekt', id: l.id, prosjektId: p.id,
+        enhetId: l.enhet_id, utstyrId: l.utstyr_id,
+        fra: p.fra, til: p.til || p.fra, tittel: p.navn,
+      });
+    }
+    return bookinger;
   }
 
   // ── Utlån ────────────────────────────────────────────────────
 
-  async function getUtlaan() {
-    const { data, error } = await sb.from('utlaan').select('*').order('fra', { ascending: false });
+  // Returnerte utlån blir stående som historikk, men holdes utenfor med
+  // mindre man ber om dem.
+  async function getUtlaan({ inkluderReturnerte = false } = {}) {
+    let q = sb.from('utlaan').select('*').order('fra', { ascending: false });
+    if (!inkluderReturnerte) q = q.is('returnert', null);
+    const { data, error } = await q;
     check(error, 'getUtlaan');
     return data.map(u => ({ ...u, utstyrId: u.utstyr_id, enhetId: u.enhet_id }));
   }
@@ -185,15 +226,16 @@ const API = (() => {
     } else {
       const { data, error } = await sb.from('utlaan').insert(row).select().single();
       check(error, 'saveUtlaan (insert)');
-      await setEnhetStatus(entry.enhetId, 'Utlånt');
       return { ...data, utstyrId: data.utstyr_id, enhetId: data.enhet_id };
     }
   }
 
-  async function returnerUtlaan(id) {
-    const u = await getUtlaanById(id);
-    await sb.from('utlaan').delete().eq('id', id);
-    await setEnhetStatus(u.enhetId, 'OK');
+  // Retur er en dato, ikke en sletting: utlånet blir stående i historikken,
+  // men slutter å båndlegge enheten fra og med returdatoen.
+  async function returnerUtlaan(id, dato) {
+    const { error } = await sb.from('utlaan')
+      .update({ returnert: dato || new Date().toISOString().split('T')[0] }).eq('id', id);
+    check(error, 'returnerUtlaan');
   }
 
   async function deleteUtlaan(id) {
@@ -271,7 +313,23 @@ const API = (() => {
   async function getProsjektUtstyr(prosjektId) {
     const { data, error } = await sb.from('prosjekt_utstyr').select('*').eq('prosjekt_id', prosjektId).order('id');
     check(error, 'getProsjektUtstyr');
-    return data.map(p => ({ ...p, prosjektId: p.prosjekt_id, utstyrId: p.utstyr_id, enhetId: p.enhet_id }));
+    return data.map(p => ({
+      ...p, prosjektId: p.prosjekt_id, utstyrId: p.utstyr_id, enhetId: p.enhet_id,
+      pakketUt: p.pakket_ut, pakketInn: p.pakket_inn,
+    }));
+  }
+
+  // Pakklista: krysser av at enheten er lastet ut på oppdrag ('ut') eller
+  // kommet tilbake på lager ('inn'). Verdien er tidspunktet, eller null
+  // når avkryssingen fjernes.
+  const PAKKE_FELT = { ut: 'pakket_ut', inn: 'pakket_inn' };
+
+  async function setProsjektUtstyrPakket(id, retning, tidspunkt) {
+    const felt = PAKKE_FELT[retning];
+    if (!felt) throw new Error(`Ukjent pakkeretning: ${retning}`);
+    const { error } = await sb.from('prosjekt_utstyr')
+      .update({ [felt]: tidspunkt }).eq('id', id);
+    check(error, 'setProsjektUtstyrPakket');
   }
 
   async function addProsjektUtstyr(entry) {
@@ -297,13 +355,14 @@ const API = (() => {
   }
 
   return {
-    init,
+    init, getBookinger,
     getUtstyr, getUtstyrById, saveUtstyr, deleteUtstyr,
-    getEnheter, getAlleEnheter, getEnhetById, getNextEnhetNr, saveEnhet, deleteEnhet, setEnhetStatus,
+    getEnheter, getAlleEnheter, getEnhetByAssetId, getNextEnhetNr, saveEnhet, deleteEnhet,
     getUtlaan, getUtlaanById, saveUtlaan, returnerUtlaan, deleteUtlaan,
     getLogg, getLoggForUtstyr, saveLogg, deleteLogg,
     getProsjekter, getProsjektById, saveProsjekt, deleteProsjekt,
     getProsjektUtstyr, addProsjektUtstyr, removeProsjektUtstyr, setProsjektUtstyrKommentar,
+    setProsjektUtstyrPakket,
   };
 
 })();
